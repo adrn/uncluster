@@ -1,0 +1,13 @@
+name: uncluster
+
+channels:
+  - astropy
+
+dependencies:
+  - numpy
+  - cython
+  - matplotlib
+  - scipy
+  - biff
+  - astro-gala
+
