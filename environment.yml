@@ -8,6 +8,8 @@ dependencies:
   - numpy
   - matplotlib
   - scipy
-  - astro-gala
   - h5py
+  - pip
+  - pip:
+    - astro-gala
 
