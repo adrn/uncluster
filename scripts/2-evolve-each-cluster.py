@@ -77,6 +77,8 @@ def F(y, t):
 
     return np.array([M_dot, r2_dot])
 
+# TODO: could rewrite the above with Cython and implement forward Euler to make this super fast
+
 def main():
 
     filename = join(OUTPUT_PATH, "1-gc-properties.ecsv")
