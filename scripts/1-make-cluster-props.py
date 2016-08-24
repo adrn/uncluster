@@ -12,14 +12,20 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 import os
-import sys
+from os.path import abspath, split, join, exists
 
 # Third-party
 from astropy import log as logger
+from astropy.table import QTable
 import astropy.units as u
 import numpy as np
 
 from uncluster import sample_radii, sample_masses
+
+_root_path = abspath(join(split(abspath(__file__))[0], ".."))
+OUTPUT_PATH = join(_root_path, "output")
+if not exists(OUTPUT_PATH):
+    os.makedirs(OUTPUT_PATH)
 
 def main():
 
@@ -76,6 +82,8 @@ def main():
     a, b = (_a - mean) / std, (_b - mean) / std
     gc_ecc = truncnorm(a, b, loc=mean, scale=std).rvs(N_gc)
 
+    tbl = QTable({'mass': gc_mass, 'radius': gc_radius, 'ecc': gc_ecc})
+    tbl.write(join(OUTPUT_PATH, "1-gc-properties.ecsv"), format='ascii.ecsv')
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
