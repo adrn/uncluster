@@ -11,8 +11,7 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
-import os
-from os.path import abspath, split, join, exists
+from os.path import join
 
 # Third-party
 from astropy import log as logger
@@ -20,21 +19,11 @@ from astropy.table import QTable
 import astropy.units as u
 import numpy as np
 
-from uncluster import sample_radii, sample_masses
-
-_root_path = abspath(join(split(abspath(__file__))[0], ".."))
-OUTPUT_PATH = join(_root_path, "output")
-if not exists(OUTPUT_PATH):
-    os.makedirs(OUTPUT_PATH)
+from uncluster import get_output_path, sample_radii, sample_masses
+from uncluster.conf import f_gc, M_min, M_max, M_tot, r_max
+OUTPUT_PATH = get_output_path(__file__)
 
 def main():
-
-    # chosen from Gnedin et al. 2014
-    f_gc = 0.012 # fraction of mass in GCs from G14
-    M_min = 1E4 * u.Msun
-    M_max = 1E7 * u.Msun
-    M_tot = 5E10 * u.Msun
-    r_max = 250. * u.kpc # changed from G14 value
 
     # Mass
     # - First I need to draw masses until the total mass in GCs is equal to
