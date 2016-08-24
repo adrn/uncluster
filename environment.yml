@@ -4,10 +4,12 @@ channels:
   - astropy
 
 dependencies:
+  - astropy
   - numpy
-  - cython
   - matplotlib
   - scipy
-  - biff
-  - astro-gala
+  - h5py
+  - pip
+  - pip:
+    - astro-gala
 

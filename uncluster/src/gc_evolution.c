@@ -16,10 +16,10 @@ extern void slinear_();
 extern double gammp_();
 
 int GALAXY, nsteps[Ntot], Nbh=0, idum=-123;
-double ri_[Ntot], rf_[Ntot], Mi_[Ntot], Mf_[Ntot], Vc_[Ntot], ti_[Ntot], tacc_[Ntot], 
-  tf_[Ntot], t_[Nz], z_[Nz], rdebris_[Nir], tdebris_[Nit], mdebris_[Nir][Nit], 
+double ri_[Ntot], rf_[Ntot], Mi_[Ntot], Mf_[Ntot], Vc_[Ntot], ti_[Ntot], tacc_[Ntot],
+  tf_[Ntot], t_[Nz], z_[Nz], rdebris_[Nir], tdebris_[Nit], mdebris_[Nir][Nit],
   mdebriss_[Nir][Nit], mdebris1_[Nir][Nit], mdebriss1_[Nir][Nit],
-  mdebrisse_[Nir], mdebrisse1_[Nir], nser, rser, rmax, Ms, Mh, rs, 
+  mdebrisse_[Nir], mdebrisse1_[Nir], nser, rser, rmax, Ms, Mh, rs,
   kms=2.07e-3,
   fGC0=0.01,  // initial cluster mass fraction
   beta=2.0,   // slope of the initial cluster mass function
@@ -36,7 +36,7 @@ typedef struct {
 black_hole bh[100];
 
 
-void EllModel( double z, double *Msz, double *nserz, double *rserz, 
+void EllModel( double z, double *Msz, double *nserz, double *rserz,
 	       double *an, double *bn ) {
   double ns;
   *Msz = Ms*pow(1.+z, -0.67);
@@ -53,16 +53,16 @@ void GenerateClusters( int *Nformed ) {
   #define ni 501
   int i, idum, i1, i2, iacc, n=ni, nz=Nz, j, nj, ns=7;
   double r, f, an, bn, arg, argc, gamnorm, Msz, Msz1, nserz, rserz, t, ti, tf, z,
-    m_in, tau_in = 1.1, tau_acc = 6., 
+    m_in, tau_in = 1.1, tau_acc = 6.,
     f_in, f_in1, f_acc, f_acc1, df_in, df_acc, dMsz_in, dMsz_acc, reduction_factor, tsf,
     rser_[ni], mser_[ni], mser1_[ni], dmser_[ni], tsf_[ni], fsf_[ni],
-    zs_[7] =   { 0., 0.4,  1.,  2.,   3.,   4.,   6. }, 
+    zs_[7] =   { 0., 0.4,  1.,  2.,   3.,   4.,   6. },
     rhos_[7] = { 1., 0.95, 0.8, 0.45, 0.12, 0.02, 0. };
 
-  if(GALAXY>=3) { 
-    nj = 20; 
+  if(GALAXY>=3) {
+    nj = 20;
     m_in = 0.52;
-  } else { 
+  } else {
     nj = 1;
     m_in = 1.0;
     zi = 3.;
@@ -75,7 +75,7 @@ void GenerateClusters( int *Nformed ) {
     nser = 3.;
     EllModel(0., &Msz, &nserz, &rserz, &an, &bn);
     arg = bn*pow(r/rserz, 1./nserz);
-    M3 = gammp_(&an, &arg);     
+    M3 = gammp_(&an, &arg);
     nser = 8.;
     EllModel(0., &Msz, &nserz, &rserz, &an, &bn);
     arg = bn*pow(r/rserz, 1./nserz);
@@ -91,10 +91,10 @@ void GenerateClusters( int *Nformed ) {
   ran1_(&idum);
   i2=0; Msz=f_in=f_acc=0.;
   for(i=0; i<ni; i++) mser_[i]=0.;
-  
+
   slinear_(z_, t_, &nz, &zi, &ti);
   slinear_(z_, t_, &nz, &zf, &tf);
-  
+
   // interpolate the growth rate by star formation
   for(i=0; i<ni; i++) {
     tsf_[i] = t = t_[0]*(double)i/(double)(ni-1);
@@ -105,7 +105,7 @@ void GenerateClusters( int *Nformed ) {
 
   for(j=0; j<nj; j++) {
     if(j==0) {
-      t = ti; 
+      t = ti;
       z = zi;
     } else {
       t = ti + (tf-ti)*(double)j/(double)(nj-1);
@@ -125,7 +125,7 @@ void GenerateClusters( int *Nformed ) {
       arg = bn*pow(r/rserz, 1./nserz);
       mser_[i] = gammp_(&an, &arg)/gamnorm;
     }
-    
+
     // split stellar mass growth into in-situ star formation and dissipationless accretion
     f_in1 = f_in; f_acc1 = f_acc;
     f_in = m_in*(1.-(1.+t/tau_in)*exp(-t/tau_in))/(1.-(1.+t_[0]/tau_in)*exp(-t_[0]/tau_in));
@@ -134,12 +134,12 @@ void GenerateClusters( int *Nformed ) {
     df_acc = f_acc - f_acc1;
     dMsz_in = (Msz-Msz1)*df_in/(df_in+df_acc);
     dMsz_acc = (Msz-Msz1)*df_acc/(df_in+df_acc);
-    
+
     // find where the new stellar profile exceeds the old one by 0.4% (= observed M_bh/M_* ratio)...
     for(i=0; i<ni; i++) dmser_[i] = mser_[i] - Msz1/Msz*mser1_[i];
     f = 0.004;
     slinear_(dmser_, rser_, &n, &f, &r);
-    
+
     // ...and put an accreted satellite black hole there
     slinear_(zs_, rhos_, &ns, &z, &reduction_factor);
     if(reduction_factor > 1.) reduction_factor = 1.;
@@ -148,11 +148,11 @@ void GenerateClusters( int *Nformed ) {
     bh[Nbh].r = r;
     bh[Nbh].tacc = t;
     Nbh++;
-    
+
     // number of clusters to form
-    i1 = i2;  
+    i1 = i2;
     //i2 = i1 + (int)((Msz-Msz1)/M1+0.5);
-    //if(i2 < i1) i2=i1;   
+    //if(i2 < i1) i2=i1;
     //iacc = i1 + (int)(dMsz_in/M1+0.5);
 
     // draw cluster mass, to match the required mass of clusters forming in this episode
@@ -163,9 +163,9 @@ void GenerateClusters( int *Nformed ) {
     while(summz < sumM1-Mmin && i < Ntot) {
       m = Mmin/pow(1. - ran1_(&idum)*(1.-pow(Mmin/Mmax,beta-1.)), 1./(beta-1.));
       if(summz+m < sumM1+Mmin) {
-	summz += m;
-	Mi_[i]=m; i++;
-	if(iacc<0 && summz>sumMacc) iacc=i;
+	      summz += m;
+	      Mi_[i]=m; i++;
+	      if(iacc<0 && summz>sumMacc) iacc=i;
       }
     }
     i2=i;
@@ -189,8 +189,8 @@ void GenerateClusters( int *Nformed ) {
       }
     }
 
-    printf("i1=%d i2=%d Nacc=%d f_in=%5.3f z=%5.3f t=%5.3f Msz=%9.3e Msz1=%9.3e dMsz_in=%g\n", 
-	   i1, i2, i2-iacc, df_in/(df_in+df_acc), z, t, Msz, Msz1, dMsz_in);    
+    printf("i1=%d i2=%d Nacc=%d f_in=%5.3f z=%5.3f t=%5.3f Msz=%9.3e Msz1=%9.3e dMsz_in=%g\n",
+	   i1, i2, i2-iacc, df_in/(df_in+df_acc), z, t, Msz, Msz1, dMsz_in);
   }
   *Nformed = i2;
 }
@@ -234,7 +234,7 @@ double Spline2D( double x, double y, int nx, int ny, double *x_, double *y_, dou
     |                       |         |
     ---------> x        F11 * - - - - * F21
    ::::::::::::::::::::::::::::::::::::::::::::::::::::: */
-  if(x1==x2) 
+  if(x1==x2)
     s = ( (y2-y)*F21 + (y-y1)*F22 )/dy;
   else
     s = ( (x2-x)*(y2-y)*F11 + (x2-x)*(y-y1)*F12
@@ -268,9 +268,9 @@ void Potential( double r, double *Vcirc, double t ) {
 }
 
 
-void skiplines( FILE *in, int n ) 
+void skiplines( FILE *in, int n )
 {
-  int i; char ch;  
+  int i; char ch;
   for(i=0; i<n; i++) {ch='1'; while(ch != '\n') fscanf(in, "%c", &ch);}
 }
 
@@ -279,8 +279,8 @@ void skiplines( FILE *in, int n )
 int main( int argc, char *argv[] )
 {
   int i, j, it, ir, ir2, irbh, Ncl, Nclf, nms, EVAP;
-  double delta, slope, td, tdf, t, dt, dt0, m, r, Vc, age, fse, fse1, fse0, dm1, dm2, 
-    dm1se, tol, P, t_tid, t_iso, mitot, mftot, logmitot, logmftot, miav, mfav, mcbh, 
+  double delta, slope, td, tdf, t, dt, dt0, m, r, Vc, age, fse, fse1, fse0, dm1, dm2,
+    dm1se, tol, P, t_tid, t_iso, mitot, mftot, logmitot, logmftot, miav, mfav, mcbh,
     rhocl, flost_[33], mslife_[33];
   char filename[60];
   FILE *in, *out, *out2, *out3, *out4, *outs;
@@ -293,8 +293,8 @@ int main( int argc, char *argv[] )
   // Understanding input
   GALAXY = atoi(argv[1]);
   switch(GALAXY) {
-  case 1: 
-    printf("MW galaxy, "); 
+  case 1:
+    printf("MW galaxy, ");
     Ms = 5.e10;   // stellar mass, in solar masses
     nser = 2.2;   // stellar Sersic parameter 2.2
     rser = 4.;    // stellar Sersic effective radius, in kpc
@@ -304,7 +304,7 @@ int main( int argc, char *argv[] )
     break;
   case 2:
   case 3:
-    printf("M87 galaxy, "); 
+    printf("M87 galaxy, ");
     Ms = 8.e11;   // stellar mass, in solar masses
     nser = 8.;    // stellar Sersic parameter
     rser = 30.;   // stellar Sersic effective radius, in kpc
@@ -313,7 +313,7 @@ int main( int argc, char *argv[] )
     rs = 50.;     // halo scale radius, in kpc
     break;
   case 4:
-    printf("M87-mini1 galaxy, "); 
+    printf("M87-mini1 galaxy, ");
     Ms = 2.e11;   // stellar mass, in solar masses
     nser = 4.;    // stellar Sersic parameter
     rser = 8.6;   // stellar Sersic effective radius, in kpc
@@ -322,7 +322,7 @@ int main( int argc, char *argv[] )
     rs = 35.;     // halo scale radius, in kpc
     break;
   case 5:
-    printf("M87-mini2 galaxy, "); 
+    printf("M87-mini2 galaxy, ");
     Ms = 5.e10;   // stellar mass, in solar masses
     nser = 2.;    // stellar Sersic parameter
     rser = 2.5;   // stellar Sersic effective radius, in kpc
@@ -330,7 +330,7 @@ int main( int argc, char *argv[] )
     Mh = 1.e12;   // halo mass, in solar masses
     rs = 20.;     // halo scale radius, in kpc
     break;
-  default: 
+  default:
     printf("galaxy must be 1, 2, 3, 4, or 5\n"); return 1;
   }
 
@@ -391,13 +391,13 @@ int main( int argc, char *argv[] )
   mcbh = 0.;
   for(i=0; i<Nbh; i++) {
     t = bh[i].tacc; dt0 = (t_[0]-t)*0.002;
-    r = bh[i].r;  
+    r = bh[i].r;
 
     r = 1.e-6; //to test instantaneous deposition of satellite BHs at the center
 
     irbh=Nir-1;
     while(t<t_[0] && r>1.e-6) {
-      Potential(r, &Vc, t);     
+      Potential(r, &Vc, t);
       tdf = 64.*sqr(r)*(Vc/283.)/(bh[i].m/2.e5)*ecc_df;
       // update time step
       dt = dt0;
@@ -450,10 +450,10 @@ int main( int argc, char *argv[] )
       Potential(r, &Vc, t);
       if(j==0) Vc_[i] = Vc;
       j++;
-      
+
       // dynamical friction, until r = 1 pc
       tdf = 64.*sqr(r)*(Vc/283.)/(m/2.e5)*ecc_df;
-      
+
       // tidal mass loss, until M = 1 Msun
       P = (r/5.)*(207./Vc);
       t_tid = 10.*pow(m/2.e5,slope)*P;
@@ -463,20 +463,20 @@ int main( int argc, char *argv[] )
 	tdf = 1.e99;
 	t_tid = 10.*pow(m/2.e5,slope);
       }
-      
+
       t_iso = 17.*(m/2.e5);  // or 17.*pow(m/2.e5,0.87)
       if(t_tid < t_iso) td = t_tid; else td = t_iso;
-      
+
       // update time step
       dt = dt0;
       tol = 0.02;
       if(dt > tol*tdf && r > 1.e-6) dt = tol*tdf;
       if(dt > tol*td) dt = tol*td;
       t += dt;
-      
+
       // update radius
       r *= (1. - dt/tdf/2.); if(r < 1.e-7) r = 1.e-7;
-      
+
       // update mass
       dm1 = m*dt/td;  if(dm1>m) dm1=m;
 
@@ -490,14 +490,14 @@ int main( int argc, char *argv[] )
       if(rhocl < 0.16*sqr(Vc/kms/r)*1.e-9) dm1=m;
 
       m -= dm1;
-      
+
       // stellar evolution mass loss
       fse1 = fse;
       age = t - ti_[i];
       slinear_(mslife_, flost_, &nms, &age, &fse);
       dm2 = m*(fse-fse1);  if(dm2>m) dm2=m; if(dm2<0) dm2=0.;
       m -= dm2;
-      
+
       // stellar evolution mass loss of stripped stars
       age = t_[0] - ti_[i];
       slinear_(mslife_, flost_, &nms, &age, &fse0);
@@ -564,7 +564,7 @@ int main( int argc, char *argv[] )
   // statistics of cluster population
   mitot = mftot = logmitot = logmftot = 0.; Nclf=0;
   for(i=0; i<Ncl; i++) {
-    mitot += Mi_[i]; 
+    mitot += Mi_[i];
     logmitot += log(Mi_[i]);
     mftot += Mf_[i];
     if(Mf_[i]>1.) { logmftot += log(Mf_[i]); Nclf++; }
@@ -572,7 +572,7 @@ int main( int argc, char *argv[] )
   miav = exp(logmitot/(double)Ncl);
   mfav = exp(logmftot/(double)Nclf);
   printf("cluster number: initial = %d  final = %d\n", Ncl, Nclf);
-  printf("cluster mass: initial = %8.2e  final = %8.2e  <mi> = %8.2e  <mf> = %8.2e\n", 
+  printf("cluster mass: initial = %8.2e  final = %8.2e  <mi> = %8.2e  <mf> = %8.2e\n",
 	 mitot, mftot, miav, mfav);
 
   if( (outs = fopen( "runs.sum", "a" )) == NULL )
@@ -586,13 +586,13 @@ int main( int argc, char *argv[] )
   if( (out = fopen( filename, "w" )) == NULL )
     { printf("Can't open file <%s>\n", filename); exit(1); }
   fprintf(out, "# Globular cluster system modeling\n");
-  fprintf(out, "# galaxy=%d evap=%d init_cluster_fraction=%g CMFslope=%g Mmin=%g Mmax=%g\n", 
+  fprintf(out, "# galaxy=%d evap=%d init_cluster_fraction=%g CMFslope=%g Mmin=%g Mmax=%g\n",
 	  GALAXY, EVAP, fGC0, beta, Mmin, Mmax);
-  fprintf(out, "# Ncl_i=%d Ncl_f=%d Mcltot_i=%8.2e Mcltot_f=%8.2e mav_i=%8.2e mav_f=%8.2e\n", 
+  fprintf(out, "# Ncl_i=%d Ncl_f=%d Mcltot_i=%8.2e Mcltot_f=%8.2e mav_i=%8.2e mav_f=%8.2e\n",
 	  Ncl, Nclf, mitot, mftot, miav, mfav);
   fprintf(out, "# columns: ri rf Mi Mf Vc nsteps ti tacc tf\n");
   for(i=0; i<Ncl; i++)
-    fprintf(out, "%9.3e %9.3e %9.3e %9.3e %5.1f %d %5.2f %5.2f %5.2f\n", 
+    fprintf(out, "%9.3e %9.3e %9.3e %9.3e %5.1f %d %5.2f %5.2f %5.2f\n",
 	    ri_[i], rf_[i], Mi_[i], Mf_[i], Vc_[i], nsteps[i], ti_[i], tacc_[i], tf_[i]);
   fclose(out);
 
