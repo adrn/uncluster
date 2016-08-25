@@ -14,6 +14,7 @@ from os.path import join, exists
 from astropy import log as logger
 from astropy.table import QTable
 import astropy.units as u
+import h5py
 import numpy as np
 
 from uncluster import get_output_path
@@ -39,6 +40,17 @@ def main(gc_props_filename, output_filename):
     t_disrupt[t_disrupt == t_evolve.to(u.Gyr).value] = np.nan
 
     logger.info("{}/{} clusters survived".format(np.isnan(t_disrupt).sum(), len(t_disrupt)))
+
+    # write to hdf5 file
+    with h5py.File(output_filename, 'w') as f:
+        f.create_dataset('time', data=t_grid)
+
+        cl = f.create_group('clusters')
+        for i in range(len(gc_props)):
+            g = cl.create_group(str(i))
+            g.create_dataset('mass', data=m[i])
+            g.create_dataset('radius', data=r[i])
+            g.attrs['t_disrupt'] = t_disrupt[i]
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
