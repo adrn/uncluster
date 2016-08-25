@@ -1,11 +1,16 @@
-from .gnedin_mass_radius import *
+# Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-def get_output_path(f):
-    import os
-    from os.path import abspath, split, join, exists
+"""
+This is an Astropy affiliated package.
+"""
 
-    _root_path = abspath(join(split(abspath(f))[0], ".."))
-    OUTPUT_PATH = join(_root_path, "output")
-    if not exists(OUTPUT_PATH):
-        os.makedirs(OUTPUT_PATH)
-    return OUTPUT_PATH
+# Affiliated packages may add whatever they like to this file, but
+# should keep this content at the top.
+# ----------------------------------------------------------------------------
+from ._astropy_init import *
+# ----------------------------------------------------------------------------
+
+# For egg_info test builds to pass, put package imports here.
+if not _ASTROPY_SETUP_:
+    from .gnedin_mass_radius import *
+    from .conf import *
