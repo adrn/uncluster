@@ -44,13 +44,20 @@ def main(gc_props_filename, output_filename):
     # write to hdf5 file
     with h5py.File(output_filename, 'w') as f:
         f.create_dataset('time', data=t_grid)
+        f.attrs['n'] = len(t_disrupt)
 
         cl = f.create_group('clusters')
         for i in range(len(gc_props)):
+            # set mass to 0 at disruption index
+            if not np.isnan(t_disrupt[i]):
+                m[i][disrupt_idx[i]] = 0.
+
             g = cl.create_group(str(i))
-            g.create_dataset('mass', data=m[i])
-            g.create_dataset('radius', data=r[i])
+            g.create_dataset('mass', data=m[i][:disrupt_idx[i]+1])
+            g.create_dataset('radius', data=r[i][:disrupt_idx[i]+1])
             g.attrs['t_disrupt'] = t_disrupt[i]
+            g.attrs['disrupt_idx'] = disrupt_idx[i]
+            g.attrs['ecc'] = gc_props['ecc'][i]
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
