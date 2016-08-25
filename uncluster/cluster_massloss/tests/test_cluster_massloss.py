@@ -15,9 +15,7 @@ from .._core import solve_mass_radius
 def test():
 
     t_grid = np.linspace(0, 11.5, 4096)
-    m0 = np.zeros(16) + 1E6
-    r0 = np.zeros(16) + 50.
+    m0 = 53091.704715
+    r0 = 18.6115039789
 
-    t1 = time.time()
     solve_mass_radius(m0, r0, t_grid)
-    print(time.time()-t1)

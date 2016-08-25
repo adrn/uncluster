@@ -21,6 +21,8 @@ from libc.math cimport sqrt, isnan
 # Project
 from ..potential import potential as pot
 
+cdef double _NAN = float("nan")
+
 # Functions used to solve the differential equation for cluster mass M(t)
 cdef double P(double r, double vc):
     return 207. * r / vc / 5. # Eq. 4
@@ -45,8 +47,9 @@ cdef void dy_dt(double M, double r2, double t,
     cdef double tid, iso, min_t, vc
 
     if M <= 0 or r2 <= 0:
-        out[0] = NAN
-        out[1] = NAN
+        out[0] = _NAN
+        out[1] = _NAN
+        return
 
     r = sqrt(r2)
 
