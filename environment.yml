@@ -2,13 +2,16 @@ name: uncluster
 
 channels:
   - astropy
+  - asmeurer
 
 dependencies:
   - astropy
   - numpy
   - matplotlib
+  - cython
   - scipy
   - h5py
+  - gsl=1.16
   - pip
   - pip:
     - astro-gala
