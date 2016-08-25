@@ -33,10 +33,10 @@ _Mh = M_h.to(u.Msun).value
 _rs_h = rs_h.to(u.kpc).value
 
 r_grid, m_grid = _sersic_frac_mass_enclosed_grid(rmax=r_max.to(u.kpc).value)
+interp_func = InterpolatedUnivariateSpline(r_grid, m_grid * _M_tot, k=1)
 def mass_enc_stars(r):
     if r < 1E-4:
         return 1.
-    interp_func = InterpolatedUnivariateSpline(r_grid, m_grid * _M_tot, k=1)
     return interp_func(r)
 
 kms = np.sqrt(G).to(u.km/u.s / np.sqrt(1*u.Msun/u.kpc).unit).value
@@ -63,7 +63,7 @@ def t_df(r, M, f_e=0.5): # HACK: this f_e is WRONG -- should be computed from or
 def F(y, t):
     M,r2 = y
 
-    if M <= 0:
+    if M <= 0 or r2 <= 0:
         return np.array([np.nan, np.nan])
 
     r = math.sqrt(r2)
@@ -78,6 +78,7 @@ def F(y, t):
     return np.array([M_dot, r2_dot])
 
 # TODO: could rewrite the above with Cython and implement forward Euler to make this super fast
+# https://lists.gnu.org/archive/html/help-gsl/2007-06/msg00021.html
 
 def main():
 
@@ -96,24 +97,31 @@ def main():
         _r = row['radius'].to(u.kpc).value
         _M = row['mass'].to(u.Msun).value
 
-        y = np.zeros((t_grid.size, 2))
+        y = np.zeros((t_grid.size+1, 2))
         y[0] = [_M, _r**2]
 
         # M_r2_odeint = odeint(F, y[0], t=t_grid) # TODO: why doesn't this work??
 
         # use a forward Euler method instead...
-        for i,t in enumerate(t_grid[:-1]):
+        for i,t in enumerate(t_grid):
             dy_dt = F(y[i], t)
             y[i+1] = y[i] + dy_dt*dt
 
-            if np.isnan(dy_dt[0]):
+            if np.isnan(dy_dt).any():
                 break
 
         M_t = y[:i+1, 0]
         r_t = np.sqrt(y[:i+1, 1])
         t = t_grid[:i+1]
+        # TODO: write to file
 
         t_disrupt[j] = t[-1]
+
+    # set disruption time to NaN if it didn't disrupt
+    idx = np.allclose(t_disrupt, t_evolve.to(u.Gyr).value)
+    t_disrupt[idx] = np.nan
+    t_disrupt = t_disrupt*u.Gyr
+
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
