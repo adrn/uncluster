@@ -12,9 +12,10 @@ def get_extensions():
     cfg['include_dirs'].append('numpy')
     cfg['include_dirs'].append(mac_incl_path)
     cfg['extra_compile_args'].append('--std=gnu99')
-    cfg['sources'].append('uncluster/gc_massloss.pyx')
+    cfg['sources'].append('uncluster/cluster_massloss/core.pyx')
+    cfg['sources'].append('uncluster/cluster_massloss/gc_massloss.c')
     cfg['libraries'] = ['gsl', 'gslcblas']
-    exts.append(Extension('uncuster._gc_massloss', **cfg))
+    exts.append(Extension('uncluster.cluster_massloss._core', **cfg))
 
     return exts
 
