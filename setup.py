@@ -65,8 +65,9 @@ generate_version_py(PACKAGENAME, VERSION, RELEASE,
                     get_debug_option(PACKAGENAME))
 
 # Treat everything in scripts except README.rst as a script to be installed
-scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
-           if os.path.basename(fname) != 'README.rst']
+# APW: don't install scripts
+# scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
+#            if os.path.basename(fname) != 'README.rst']
 
 
 # Get configuration information from all of the various subpackages.
