@@ -10,20 +10,22 @@ This is an Astropy affiliated package.
 from ._astropy_init import *
 # ----------------------------------------------------------------------------
 
+class OutputPaths(object):
+
+    def __init__(self, script__file__):
+        import os
+        from os import abspath, join, split, exists
+        _root_path = abspath(join(split(abspath(filename))[0], ".."))
+
+        self.cache = join(_root_path, "cache")
+        self.plot = join(_root_path, "plots")
+
+        for path in [self.cache, self.plot]:
+            if not exists(path):
+                os.makedirs(path)
+
 # For egg_info test builds to pass, put package imports here.
 if not _ASTROPY_SETUP_:
-    from .gnedin_mass_radius import *
     from .conf import *
-
-    def get_output_path(filename):
-        """
-        Given the filename of a module in `scripts`, get the output path.
-        """
-        import os
-        from os.path import abspath, split, join, exists
-
-        _root_path = abspath(join(split(abspath(filename))[0], ".."))
-        OUTPUT_PATH = join(_root_path, "output")
-        if not exists(OUTPUT_PATH):
-            os.makedirs(OUTPUT_PATH)
-        return OUTPUT_PATH
+    from . import cluster_distributions
+    from . import cluster_massloss
