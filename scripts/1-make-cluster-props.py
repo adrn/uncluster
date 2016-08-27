@@ -10,29 +10,31 @@ from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
-# Standard library
-from os.path import join
-
 # Third-party
 from astropy import log as logger
 from astropy.table import QTable
 import astropy.units as u
+import matplotlib.pyplot as plt
 import numpy as np
 
-from uncluster import get_output_path, sample_radii, sample_masses
-from uncluster.conf import f_gc, M_min, M_max, M_tot, r_max
-OUTPUT_PATH = get_output_path(__file__)
+from uncluster import OutputPaths
+paths = OutputPaths(__file__)
+
+# from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
+from uncluster.cluster_distributions.apw import sample_radii, sample_masses
+from uncluster.config import f_gc, M_tot
 
 def main():
+    # =========================================================
+    # Masses
+    # =========================================================
 
-    # Mass
-    # - First I need to draw masses until the total mass in GCs is equal to
-    #   a fraction of the total mass in stars:
+    # - Sample masses until the total mass in GCs is equal to a fraction (f_gc) of the
+    #   total mass in stars (M_tot):
     maxiter = 32000
-    gc_mass = sample_masses(M_min=M_min, M_max=M_max, size=maxiter)
+    gc_mass = sample_masses(size=maxiter)
     for i in range(maxiter):
         _sum = gc_mass[:i+1].sum()
-        logger.debug("{} - M_tot={:.2e}".format(i, _sum))
         if _sum >= f_gc*M_tot:
             break
 
@@ -43,36 +45,37 @@ def main():
     N_gc = len(gc_mass)
     logger.info("Sampled {} cluster masses (M_tot = {:.2e})".format(N_gc, gc_mass.sum()))
 
-    # Mean orbital radius
-    gc_radius = sample_radii(r_max=r_max, size=N_gc)
+    # =========================================================
+    # Mean orbital radii
+    # =========================================================
 
-    # ------------------------------------------------------------------------
-    # a test plot:
-    # import matplotlib.pyplot as plt
-    # _r = np.logspace(-2, 2, 512) * u.kpc
-    # menc = np.zeros(_r.size)
-    # for i,_rr in enumerate(_r):
-    #     idx = gc_radius < _rr
-    #     menc[i] = gc_mass[idx].sum().value
+    gc_radius = sample_radii(size=N_gc)
 
-    # plt.figure(figsize=(6,6))
-    # plt.loglog(_r, menc, marker=None)
-    # plt.xlim(1E-3, 1E2)
-    # plt.ylim(1E6, 1E9)
-    # plt.title("Compare to Fig. 3 in G14", fontsize=16)
-    # plt.show()
-    # ------------------------------------------------------------------------
+    # =========================================================
+    # Make plots
+    # =========================================================
 
-    # Eccentricity
-    # HACK: for now, use a truncated normal...
-    from scipy.stats import truncnorm
-    mean, std = 0.6, 0.3 # mean, stddev of my hack eccentricity distribution
-    _a, _b = 0., 1. # bounds for eccentricity
-    a, b = (_a - mean) / std, (_b - mean) / std
-    gc_ecc = truncnorm(a, b, loc=mean, scale=std).rvs(N_gc)
+    # plot enclosed mass profile for the clusters
+    _r = np.logspace(-2, 2, 512) * u.kpc
+    menc = np.zeros(_r.size)
+    for i,_rr in enumerate(_r):
+        idx = gc_radius < _rr
+        menc[i] = gc_mass[idx].sum().value
 
-    tbl = QTable({'mass': gc_mass, 'radius': gc_radius, 'ecc': gc_ecc})
-    tbl.write(join(OUTPUT_PATH, "1-gc-properties.ecsv"), format='ascii.ecsv')
+    plt.figure(figsize=(6,6))
+    plt.loglog(_r, menc, marker=None)
+    plt.xlim(1E-3, 1E2)
+    plt.ylim(1E6, 1E9)
+    plt.xlabel(r"$M_{\rm GC}(<r)$")
+    plt.ylabel(r"$r$ [kpc]")
+    plt.title("Compare to Fig. 3 in G14", fontsize=16)
+    plt.savefig(str(paths.plot.joinpath('gc-enclosed-mass.pdf')))
+
+    # =========================================================
+    # Cache the output
+    # =========================================================
+    tbl = QTable({'mass': gc_mass, 'radius': gc_radius})
+    tbl.write(str(paths.cache.joinpath("1-gc-properties.ecsv")), format='ascii.ecsv')
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
