@@ -68,7 +68,7 @@ generate_version_py(PACKAGENAME, VERSION, RELEASE,
 # APW: don't install scripts
 # scripts = [fname for fname in glob.glob(os.path.join('scripts', '*'))
 #            if os.path.basename(fname) != 'README.rst']
-
+scripts = []
 
 # Get configuration information from all of the various subpackages.
 # See the docstring for setup_helpers.update_package_files for more
