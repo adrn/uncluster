@@ -51,7 +51,7 @@ _interp_ln_dens = InterpolatedUnivariateSpline(r_grid[_idx],
                                                np.log(dm_dr[_idx]) - np.log(4*np.pi*r_grid[_idx]**2),
                                                k=1)
 def gc_prob_density(r):
-    """
+    r"""
     Evaluate the **probability** density of the spatial distribtuon
     of globular clusters following a Hernquist profile.
 
@@ -59,7 +59,7 @@ def gc_prob_density(r):
 
     .. math::
 
-        \nu(r) = \int f(r,v)\,{\rm d}v
+        \nu (r) = \int {\rm d}v \, f(r,v)
 
     .. note::
 
@@ -75,11 +75,14 @@ def gc_prob_density(r):
 
 @u.quantity_input(M_min=u.Msun, M_max=u.Msun)
 def sample_masses(M_min=M_min, M_max=M_max, size=1):
-    """
+    r"""
     Use inverse transform sampling to generate samples from a power-law
-    initial mass distribution with beta = -2:
+    initial mass distribution with :math:`\beta = -2`:
 
-        p(m) = A m^{-2}
+    .. math::
+
+        p(M) = A M^{-2}
+        M \elem [M_{\rm min}, M_{\rm max}]
 
     Parameters
     ----------

@@ -18,15 +18,16 @@ __all__ = ['gc_prob_density', 'sample_radii', 'sample_masses']
 # HACK: this is a BY EYE "fit" to the Sersic density profile
 _hernquist = HernquistPotential(m=1., c=2., units=galactic)
 def gc_prob_density(r):
-    """
+    r"""
     Evaluate the **probability** density of the spatial distribtuon
     of globular clusters following a Hernquist profile.
 
-    This is *not* the mass-density or number-density, but:
+    This is *not* the mass-density or number-density, but
 
     .. math::
 
-        \nu(r) = \int f(r,v)\,{\rm d}v
+        \nu (r) = \int {\rm d}v \, f(r,v)
+
 
     Parameters
     ----------
