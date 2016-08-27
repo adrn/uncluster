@@ -181,3 +181,13 @@ if eval(setup_cfg.get('edit_on_github')):
 
 # show inherited members for classes
 automodsumm_inherited_members = True
+
+# Override imgmath -- use mathjax instead
+try:
+    idx = extensions.index('sphinx.ext.imgmath')
+    extensions.pop(idx)
+except:
+    idx = extensions.index('sphinx.ext.pngmath')
+    extensions.pop(idx)
+
+extensions.append('sphinx.ext.mathjax')
