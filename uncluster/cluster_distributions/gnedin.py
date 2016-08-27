@@ -82,7 +82,8 @@ def sample_masses(M_min=M_min, M_max=M_max, size=1):
     .. math::
 
         p(M) = A M^{-2}
-        M \elem [M_{\rm min}, M_{\rm max}]
+
+        M \in [M_{\rm min}, M_{\rm max}]
 
     Parameters
     ----------
