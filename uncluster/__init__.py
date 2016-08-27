@@ -26,6 +26,9 @@ class OutputPaths(object):
             if not path.exists:
                 os.makedirs(path)
 
+        # names of cache filenames
+        self.gc_properties = self.cache.joinpath("1-gc-properties.ecsv")
+
 # For egg_info test builds to pass, put package imports here.
 if not _ASTROPY_SETUP_:
     from .conf import *
