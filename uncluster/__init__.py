@@ -14,14 +14,16 @@ class OutputPaths(object):
 
     def __init__(self, script__file__):
         import os
-        from os import abspath, join, split, exists
-        _root_path = abspath(join(split(abspath(filename))[0], ".."))
+        from os.path import abspath, join, split, exists
+        from pathlib import Path
 
-        self.cache = join(_root_path, "cache")
-        self.plot = join(_root_path, "plots")
+        _root_path = Path(abspath(join(split(abspath(script__file__))[0], "..")))
+
+        self.cache = _root_path / "cache"
+        self.plot = _root_path / "plots"
 
         for path in [self.cache, self.plot]:
-            if not exists(path):
+            if not path.exists:
                 os.makedirs(path)
 
 # For egg_info test builds to pass, put package imports here.
