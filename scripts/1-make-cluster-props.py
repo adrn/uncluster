@@ -62,20 +62,20 @@ def main():
         idx = gc_radius < _rr
         menc[i] = gc_mass[idx].sum().value
 
-    plt.figure(figsize=(6,6))
+    plt.figure(figsize=(5,5))
     plt.loglog(_r, menc, marker=None)
     plt.xlim(1E-3, 1E2)
     plt.ylim(1E6, 1E9)
-    plt.xlabel(r"$M_{\rm GC}(<r)$")
-    plt.ylabel(r"$r$ [kpc]")
+    plt.xlabel(r"$r$ [kpc]")
+    plt.ylabel(r"$M_{\rm GC}(<r)$ [M$_\odot$]")
     plt.title("Compare to Fig. 3 in G14", fontsize=16)
-    plt.savefig(str(paths.plot.joinpath('gc-enclosed-mass.pdf')))
+    plt.savefig(str(paths.plot/'gc-enclosed-mass.pdf'))
 
     # =========================================================
     # Cache the output
     # =========================================================
     tbl = QTable({'mass': gc_mass, 'radius': gc_radius})
-    tbl.write(str(paths.cache.joinpath("1-gc-properties.ecsv")), format='ascii.ecsv')
+    tbl.write(str(paths.gc_properties), format='ascii.ecsv')
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
@@ -90,10 +90,6 @@ if __name__ == '__main__':
 
     parser.add_argument("-s", "--seed", dest="seed", default=8675309,
                         type=int, help="Random number generator seed.")
-    # parser.add_argument("-f", dest="field_id", default=None, required=True,
-    #                     type=int, help="Field ID")
-    # parser.add_argument("-p", dest="plot", action="store_true", default=False,
-    #                     help="Plot or not")
 
     args = parser.parse_args()
 
