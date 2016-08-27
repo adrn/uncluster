@@ -69,6 +69,9 @@ exclude_patterns.append('_templates')
 rst_epilog += """
 """
 
+# Add Gala to intersphinx mapping
+intersphinx_mapping['gala'] = ('http://gala.adrian.pw/en/latest/', None)
+
 # -- Project information ------------------------------------------------------
 
 # This does not *have* to match the package name, but typically does
@@ -83,6 +86,12 @@ copyright = '{0}, {1}'.format(
 
 __import__(setup_cfg['package_name'])
 package = sys.modules[setup_cfg['package_name']]
+
+# Use Gala's matplotlib style
+import gala.mpl_style as gm
+plot_rcparams = gm.mpl_style
+plot_apply_rcparams = True
+del gm
 
 # The short X.Y version.
 version = package.__version__.split('-', 1)[0]
@@ -102,10 +111,10 @@ release = package.__version__
 
 # Please update these texts to match the name of your package.
 html_theme_options = {
-    'logotext1': 'package',  # white,  semi-bold
-    'logotext2': '-template',  # orange, light
+    'logotext1': '',  # white,  semi-bold
+    'logotext2': 'Uncluster',  # red, light
     'logotext3': ':docs'   # white,  light
-    }
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # To use a different custom theme, add the directory containing the theme.
@@ -135,6 +144,9 @@ html_title = '{0} v{1}'.format(project, release)
 # Output file base name for HTML help builder.
 htmlhelp_basename = project + 'doc'
 
+# Static files to copy after template files
+html_static_path = ['_static']
+html_style = 'custom.css'
 
 # -- Options for LaTeX output --------------------------------------------------
 
@@ -166,3 +178,6 @@ if eval(setup_cfg.get('edit_on_github')):
 
     edit_on_github_source_root = ""
     edit_on_github_doc_root = "docs"
+
+# show inherited members for classes
+automodsumm_inherited_members = True
