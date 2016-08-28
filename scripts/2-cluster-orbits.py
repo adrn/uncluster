@@ -12,6 +12,7 @@ from astropy import log as logger
 from astropy.table import QTable
 import astropy.units as u
 import emcee
+import gala.dynamics as gd
 import gala.potential as gp
 from gala.units import galactic
 import h5py
@@ -35,13 +36,11 @@ class Worker(object):
         # first, optimize to find a place to initialize walkers
         res = minimize(lambda v: -self.df.ln_f_v2(v, r), 0.1, method='powell')
 
-        print(m, r)
-        return
-
-        _vv = np.linspace(0, 0.3, 128)
-        plt.figure()
-        plt.plot(_vv, np.exp([self.df.ln_f_v2(vv, r) for vv in _vv]))
-        plt.show()
+        # print(m, r)
+        # _vv = np.linspace(0, 0.3, 128)
+        # plt.figure()
+        # plt.plot(_vv, np.exp([self.df.ln_f_v2(vv, r) for vv in _vv]))
+        # plt.show()
 
         if not res.success:
             logger.error("Failed to optimize for cluster {}!".format(i))
@@ -115,21 +114,46 @@ def main(overwrite=False):
     fig.tight_layout()
     fig.savefig(str(paths.plot/'df-vs-energy.pdf'))
 
-    # now I need to draw from the velocity distribution -- I can probably do this much faster
-    #   using other methods...
+    # now I need to draw from the velocity distribution -- using emcee to do the sampling
     worker = Worker(df=iso, n_walkers=16)
     tasks = list(zip(range(len(gc_mass)), gc_mass, gc_radius))
 
-    worker(tasks[38])
-
-    return
-
+    # HACK: only do 256 for now for speed
+    DERP = 256
+    gc_radius = gc_radius[:DERP]
     with Pool() as p: # use all CPUs
-        v_mag = p.map(worker, tasks[:128])
+        v_mag = p.map(worker, tasks[:DERP])
     v_mag = np.array(v_mag)
 
+    # need to turn the radius and velocity magnitude into 3D intial conditions
+    pos,vel = iso.r_v_to_3d(gc_radius, v_mag)
+    w0 = gd.CartesianPhaseSpacePosition(pos=pos, vel=vel)
+
+    t_cross = gc_radius / v_mag
+    ecc = np.zeros_like(t_cross)
+    r_f = np.zeros_like(t_cross)
+
+    for i in range(len(t_cross)):
+        w = mw_potential.integrate_orbit(w0[i], dt=t_cross[i]/100., n_steps=2000)
+        ecc[i] = w.eccentricity()
+        r_f[i] = np.sqrt(np.sum(w.pos[:,-1]**2)).value
+
     plt.figure()
-    plt.hist(v_mag[np.isfinite(v_mag)])
+    plt.hist(ecc[np.isfinite(ecc)])
+
+    plt.figure()
+    bins = np.logspace(-1, 3, 32)
+    H,_ = np.histogram(r_f, bins=bins)
+
+    V = 4/3*np.pi*(bins[1:]**3 - bins[:-1]**3)
+    bin_cen = (bins[1:]+bins[:-1])/2.
+
+    plt.plot(bin_cen, [gc_prob_density(x) for x in bin_cen], marker=None, lw=2., ls='--')
+    plt.loglog(bin_cen, H/V/r_f.size, marker=None)
+
+    plt.xlabel('$r$')
+    plt.ylabel('$n(r)$')
+
     plt.show()
 
     # # write to hdf5 file
