@@ -24,40 +24,31 @@ class SphericalIsotropicDF(DF):
         """
         Parameters
         ----------
-        tracer : callable, :class:`~gala.potential.PotentialBase`
-            This can either be (1) a function / callable that accepts a value of the *potential*
-            as its radial coordinate (see Binney & Tremaine, Chapter 4) and computes the density,
-            or (2) an instance of a :class:`~gala.potential.PotentialBase` subclass.
+        tracer : callable
+            TODO: explain that name of argument matters!!
         background : callable, :class:`~gala.potential.PotentialBase`
             This can either be (1) a function / callable that accepts a single radius, or (2) an
             instance of a :class:`~gala.potential.PotentialBase` subclass.
         energy_grid : array_like (optional)
             Array of energies to compute the DF along. If not provided, it's assumed you'll pass
             your own energy grid and DF values to: `SphericalIsotropicDF.make_ln_df_interp_func`.
-
-        TODO: actually, this is borked. tracer has to be a function -- either takes phi and all is
-        good, or takes r and has to be a probability density!
         """
 
+        self.background = background
         if isinstance(background, gp.PotentialBase):
-            self._bg_potential = lambda r: float(background._value(np.array([[r,0.,0.]]).T))
+            self._bg_potential = self._value_wrap
         else:
             self._bg_potential = background
             self._validate_rad_func(self._bg_potential)
 
-        if isinstance(tracer, gp.PotentialBase):
-            logger.debug("SphericalIsotropicDF: need to solve for r(phi) -- this will slow down "
-                         "generating the DF grid.")
-            self._density_phi = lambda phi: float(tracer._density(np.array([[self._r_from_phi(phi),0.,0.]]).T))
+        self._validate_rad_func(tracer)
+        self.tracer = tracer
+        if 'phi' in signature(tracer).parameters:
+            self._density_phi = tracer
+        elif 'r' in signature(tracer).parameters:
+            self._density_phi = self._density_wrap
         else:
-            self._validate_rad_func(tracer)
-
-            if 'phi' in signature(tracer).parameters:
-                self._density_phi = tracer
-            elif 'r' in signature(tracer).parameters:
-                self._density_phi = lambda phi: tracer(self._r_from_phi(phi))
-            else:
-                raise ValueError("Invalid tracer density function") # TODO: why?
+            raise ValueError("Invalid tracer density function") # TODO: why?
 
         # TODO: some way to automatically estimate energy_grid...
         # if energy_grid is None:
@@ -67,6 +58,12 @@ class SphericalIsotropicDF(DF):
         #     energy_grid = -curlyE * E_scale**2
         if energy_grid is not None:
             self._make_ln_df_grid(energy_grid)
+
+    def _value_wrap(self, r):
+        return float(self.background._value(np.array([[r,0.,0.]]).T))
+
+    def _density_wrap(self, phi):
+        return self.tracer(self._r_from_phi(phi))
 
     def _r_from_phi(self, phi):
         # for x0 in np.concatenate(([10.], np.logspace(-2, 2, 8))):
@@ -85,7 +82,7 @@ class SphericalIsotropicDF(DF):
         for i,energy in enumerate(E_grid):
             df[i] = derivative(lambda H: quad(self.eddington_integrand, H, 0, args=(H,))[0],
                                energy, dx=np.abs(1E-4*energy))
-        log_df = np.log(df)
+        log_df = np.log(df / (np.sqrt(8.)*np.pi**2))
         idx = np.isfinite(log_df)
 
         if (idx.sum() / len(idx)) < 0.75:
@@ -95,13 +92,14 @@ class SphericalIsotropicDF(DF):
                            "interpolation.")
 
         self._energy_grid = E_grid[idx]
-        self._df_grid = df[idx]
+        self._log_df_grid = log_df[idx]
         self.make_ln_df_interp_func(E_grid[idx], log_df[idx])
 
     def make_ln_df_interp_func(self, E_grid, log_df_grid):
         self._energy_grid = E_grid
-        self._df_grid = np.exp(log_df_grid)
-        self.log_df_interp = interp1d(E_grid, log_df_grid, fill_value="extrapolate")
+        self._log_df_grid = log_df_grid
+        self.log_df_interp = interp1d(E_grid, log_df_grid,
+                                      bounds_error=False, fill_value=-np.inf)
 
     def ln_f_v2(self, v, r):
         if v <= 0.:
