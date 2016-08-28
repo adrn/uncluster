@@ -2,6 +2,7 @@
 from inspect import signature
 
 # Third-party
+import astropy.coordinates as coord
 from astropy import log as logger
 import astropy.units as u
 import gala.potential as gp
@@ -107,3 +108,19 @@ class SphericalIsotropicDF(DF):
 
         E = 0.5*v**2 + self._bg_potential(r)
         return self.log_df_interp(E) + 2*np.log(v)
+
+    def r_v_to_3d(self, r, v):
+        r = np.atleast_1d(r)
+        v = np.atleast_1d(v)
+
+        phi = np.random.uniform(0, 2*np.pi, size=r.size)
+        theta = np.arccos(2*np.random.uniform(size=r.size) - 1)
+        sph = coord.PhysicsSphericalRepresentation(phi=phi*u.radian, theta=theta*u.radian, r=r*u.one)
+        xyz = sph.represent_as(coord.CartesianRepresentation).xyz
+
+        phi_v = np.random.uniform(0, 2*np.pi, size=v.size)
+        theta_v = np.arccos(2*np.random.uniform(size=v.size) - 1)
+        v_sph = coord.PhysicsSphericalRepresentation(phi=phi_v*u.radian, theta=theta_v*u.radian, r=v*u.one)
+        v_xyz = v_sph.represent_as(coord.CartesianRepresentation).xyz
+
+        return xyz, v_xyz
