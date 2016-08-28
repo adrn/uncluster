@@ -4,6 +4,9 @@
 
 __author__ = "adrn <adrn@princeton.edu>"
 
+# Standard library
+from multiprocessing import Pool
+
 # Third-party
 from astropy import log as logger
 from astropy.table import QTable
@@ -21,6 +24,37 @@ paths = OutputPaths(__file__)
 from uncluster.config import t_evolve, mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
+
+class Worker(object):
+
+    def __init__(self, df, n_walkers=16):
+        self.df = df
+        self.n_walkers = n_walkers
+
+    def work(self, i, m, r):
+        # first, optimize to find a place to initialize walkers
+        res = minimize(lambda v: -self.df.ln_f_v2(v, r), 0.1, method='powell')
+
+        if not res.success:
+            logger.error("Failed to optimize for cluster {}!".format(i))
+            return np.nan
+
+        p0 = np.abs(np.random.normal(res.x, res.x*1E-2, (self.n_walkers,1)))
+        sampler = emcee.EnsembleSampler(nwalkers=self.n_walkers, dim=1,
+                                        lnpostfn=self.df.ln_f_v2, args=(r,))
+
+        try:
+            _ = sampler.run_mcmc(p0, 128)
+        except Warning:
+            logger.error("Failed to MCMC cluster {}!".format(i))
+            return np.nan
+
+        # the randint is redundant, but just being safe...
+        return sampler.chain[np.random.randint(self.n_walkers), -1, 0]
+
+    def __call__(self, args):
+        i,m,r = args
+        return self.work(i, m, r)
 
 def main(overwrite=False):
     if not paths.gc_properties.exists():
@@ -67,7 +101,7 @@ def main(overwrite=False):
 
     # plot the interpolated DF
     fig,ax = plt.subplots(1,1,figsize=(6,4))
-    ax.semilogy(-iso._energy_grid, iso._df_grid)
+    ax.semilogy(-iso._energy_grid, np.exp(iso._log_df_grid))
     ax.set_xlabel(r'-E [${\rm kpc}^2 \, {\rm Myr}^{-2}$]')
     ax.set_ylabel("df")
     fig.tight_layout()
@@ -75,27 +109,16 @@ def main(overwrite=False):
 
     # now I need to draw from the velocity distribution -- I can probably do this much faster
     #   using other methods...
-    n_walkers = 16
-    v_mag = np.zeros(len(gc_mass))
-    for i,m,r in zip(range(len(gc_mass)), gc_mass, gc_radius):
-        res = minimize(lambda v: -iso.ln_f_v2(v, r), 0.1)
-        if not res.success:
-            print("Failed to optimize for cluster {}!".format(i))
-            return
+    worker = Worker(df=iso, n_walkers=16)
+    tasks = list(zip(range(len(gc_mass)), gc_mass, gc_radius))
 
-        p0 = np.abs(np.random.normal(res.x[0], res.x[0]*1E-2, (n_walkers,1)))
+    with Pool() as p: # use all CPUs
+        v_mag = p.map(worker, tasks[:128])
+    v_mag = np.array(v_mag)
 
-        sampler = emcee.EnsembleSampler(nwalkers=n_walkers, dim=1,
-                                        lnpostfn=iso.ln_f_v2, args=(r,))
-
-        try:
-            _ = sampler.run_mcmc(p0, 128)
-        except Warning:
-            print("Failed on cluster {}!".format(i))
-            break
-
-        # the randint is redundant, but just being safe...
-        v_mag[i] = sampler.chain[np.random.randint(n_walkers), -1, 0]
+    plt.figure()
+    plt.hist(v_mag[np.isfinite(v_mag)])
+    plt.show()
 
     # # write to hdf5 file
     # with h5py.File(output_filename, 'w') as f:
