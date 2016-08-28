@@ -1,0 +1,13 @@
+The properties of the initial population of globular clusters around Milky
+Way-like galaxies are still unknown. Recent work has suggested that the Milky
+Way initially hosted close to 10,000 globular clusters, the vast majority of
+which have disrupted and contributed a significant fraction of the mass of the
+stellar halo and bulge. This would have profound implications for the chemical
+and dynamical structure of both the bulge and the stellar halo of our Galaxy. We
+consider several scenarios for the kinematics and mass distribution of the
+initial clusters and predict for each (1) the number of observable thin stellar
+streams today, (2) the clustering in conserved kinematic quantities, and (3) the
+fraction of the mass of the stellar halo contributed by disrupted globular
+clusters. We will discuss how to test these predictions with kinematic
+measurements from the Gaia mission, deep photometry from the LSST and WFIRST,
+and planned, large-area spectroscopic surveys.
