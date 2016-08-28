@@ -12,6 +12,7 @@ from astropy import log as logger
 from astropy.table import QTable
 import astropy.units as u
 import emcee
+import gala.integrate as gi
 import gala.dynamics as gd
 import gala.potential as gp
 from gala.units import galactic
@@ -74,11 +75,13 @@ def main(overwrite=False):
     t_grid = np.linspace(0., t_evolve.to(u.Gyr).value, 4096)
     gc_mass = gc_props['mass'].to(u.Msun).value
     gc_radius = gc_props['radius'].to(u.kpc).value
+    n_clusters = len(gc_props)
 
     # TODO: choose DF class at command line??
+    df_name = "sph_iso"
 
     # filename to cache interpolation grid
-    interp_grid_path = paths.cache/"interp_grid_{}.ecsv".format(SphericalIsotropicDF.__name__)
+    interp_grid_path = paths.cache/"interp_grid_{}.ecsv".format(df_name)
     if not interp_grid_path.exists() or overwrite:
         # generate a grid of energies to evaluate the DF on
         n_grid = 1024
@@ -112,66 +115,104 @@ def main(overwrite=False):
     ax.set_xlabel(r'-E [${\rm kpc}^2 \, {\rm Myr}^{-2}$]')
     ax.set_ylabel("df")
     fig.tight_layout()
-    fig.savefig(str(paths.plot/'df-vs-energy.pdf'))
+    fig.savefig(str(paths.plot/'df-vs-energy-{}.pdf'.format(df_name)))
 
     # now I need to draw from the velocity distribution -- using emcee to do the sampling
     worker = Worker(df=iso, n_walkers=16)
-    tasks = list(zip(range(len(gc_mass)), gc_mass, gc_radius))
+    tasks = list(zip(range(n_clusters), gc_mass, gc_radius))
 
     # HACK: only do 256 for now for speed
-    DERP = 256
+    DERP = 128
+    n_clusters = DERP
     gc_radius = gc_radius[:DERP]
     with Pool() as p: # use all CPUs
         v_mag = p.map(worker, tasks[:DERP])
     v_mag = np.array(v_mag)
 
+    if np.any(np.isnan(v_mag)):
+        logger.warning("Failed to find velocities for {}/{} orbits."
+                       .format(np.isnan(v_mag).sum(), n_clusters))
+
+    q = np.zeros((3,n_clusters))
+    q[0] = gc_radius
+    E = 0.5*(v_mag*u.kpc/u.Myr)**2 + mw_potential.potential(q)
+    if np.any(E.value[np.isfinite(E.value)] > 0):
+        logger.warning("{} unbound orbits.".format((E > 0.).sum()))
+
     # need to turn the radius and velocity magnitude into 3D intial conditions
     pos,vel = iso.r_v_to_3d(gc_radius, v_mag)
     w0 = gd.CartesianPhaseSpacePosition(pos=pos, vel=vel)
 
+    # to get eccentricities, integrate orbits for 10 crossing times
     t_cross = gc_radius / v_mag
+
+    dt = t_cross / 128.
+    n_steps = 8192 # 64 crossing times
+
     ecc = np.zeros_like(t_cross)
     r_f = np.zeros_like(t_cross)
+    for i in range(n_clusters):
+        logger.debug('Integrating {}, dt={:.3f}'.format(i, dt[i]))
+        if np.isnan(dt[i]):
+            ecc[i] = np.nan
+            r_f[i] = np.nan
+            continue
 
-    for i in range(len(t_cross)):
-        w = mw_potential.integrate_orbit(w0[i], dt=t_cross[i]/100., n_steps=2000)
+        w = mw_potential.integrate_orbit(w0[i], dt=dt[i], n_steps=n_steps,
+                                         Integrator=gi.DOPRI853Integrator)
         ecc[i] = w.eccentricity()
         r_f[i] = np.sqrt(np.sum(w.pos[:,-1]**2)).value
 
-    plt.figure()
-    plt.hist(ecc[np.isfinite(ecc)])
+        if np.isnan(ecc[i]):
+            raise ValueError("Failed to compute eccentricity from "
+                             "integrated orbit {} -- increase n_steps!"
+                             .format(i))
 
-    plt.figure()
+    # plot the eccentricity distribution, initial radial profile, final radial profile
+    idx = np.isfinite(ecc)
+    if idx.sum() != len(idx):
+        logger.warning("{}/{} failed eccentricities".format(n_clusters-idx.sum(),
+                                                            n_clusters))
+
+    fig,axes = plt.subplots(1, 2, figsize=(10,5))
+
+    axes[0].hist(ecc[idx], bins=np.linspace(0,1,16))
+    axes[0].set_xlabel('$e$')
+
+    # compute radial profile of clusters -- initial and final
     bins = np.logspace(-1, 3, 32)
-    H,_ = np.histogram(r_f, bins=bins)
+    H_i,_ = np.histogram(gc_radius, bins=bins)
+    H_f,_ = np.histogram(r_f[idx], bins=bins)
 
     V = 4/3*np.pi*(bins[1:]**3 - bins[:-1]**3)
     bin_cen = (bins[1:]+bins[:-1])/2.
+    axes[1].loglog(bin_cen, [gc_prob_density(x) for x in bin_cen],
+                   marker=None, lw=2., ls='--', label='target')
+    axes[1].loglog(bin_cen, H_i / V / n_clusters, marker=None, label='initial')
+    axes[1].loglog(bin_cen, H_f / V / len(r_f), marker=None, label='final', color='r')
 
-    plt.plot(bin_cen, [gc_prob_density(x) for x in bin_cen], marker=None, lw=2., ls='--')
-    plt.loglog(bin_cen, H/V/r_f.size, marker=None)
+    axes[1].legend(loc='lower left')
+    axes[1].set_xlabel('$r$')
+    axes[1].set_ylabel('$n(r)$')
 
-    plt.xlabel('$r$')
-    plt.ylabel('$n(r)$')
+    fig.tight_layout()
+    fig.savefig(str(paths.plot/'ecc-radial-profile-{}.pdf'.format(df_name)))
 
-    plt.show()
+    # Write out the initial conditions and cluster properties
+    # TODO: for now, this is fine. but i might want to just write to the same ecsv file?
+    with h5py.File(str(paths.gc_w0).format(df_name), 'w') as f:
+        f.attrs['n'] = n_clusters
 
-    # # write to hdf5 file
-    # with h5py.File(output_filename, 'w') as f:
-    #     f.create_dataset('time', data=t_grid)
-    #     f.attrs['n'] = len(t_disrupt)
+        d = f.create_dataset('w0_pos', data=w0.pos)
+        d.attrs['unit'] = 'kpc'
 
-    #     cl = f.create_group('clusters')
-    #     for i in range(len(gc_props)):
-    #         # set mass to 0 at disruption index
-    #         if not np.isnan(t_disrupt[i]):
-    #             m[i][disrupt_idx[i]] = 0.
+        d = f.create_dataset('w0_vel', data=w0.vel)
+        d.attrs['unit'] = 'kpc/Myr'
 
-    #         g = cl.create_group(str(i))
-    #         g.create_dataset('mass', data=m[i][:disrupt_idx[i]+1])
-    #         g.create_dataset('radius', data=r[i][:disrupt_idx[i]+1])
-    #         g.attrs['t_disrupt'] = t_disrupt[i]
-    #         g.attrs['disrupt_idx'] = disrupt_idx[i]
+        d = f.create_dataset('mass', data=gc_mass)
+        d.attrs['unit'] = 'Msun'
+
+        f.create_dataset('ecc', data=ecc)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser

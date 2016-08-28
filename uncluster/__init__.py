@@ -28,6 +28,7 @@ class OutputPaths(object):
 
         # names of cache filenames
         self.gc_properties = self.cache.joinpath("1-gc-properties.ecsv")
+        self.gc_w0 = self.cache.joinpath("2-w0-{}.hdf5")
 
 # For egg_info test builds to pass, put package imports here.
 if not _ASTROPY_SETUP_:
