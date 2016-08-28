@@ -8,11 +8,13 @@ __author__ = "adrn <adrn@princeton.edu>"
 from astropy import log as logger
 from astropy.table import QTable
 import astropy.units as u
+import emcee
 import gala.potential as gp
 from gala.units import galactic
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize import minimize
 
 from uncluster import OutputPaths
 paths = OutputPaths(__file__)
@@ -32,12 +34,13 @@ def main(overwrite=False):
     gc_mass = gc_props['mass'].to(u.Msun).value
     gc_radius = gc_props['radius'].to(u.kpc).value
 
+    # TODO: choose DF class at command line??
 
     # filename to cache interpolation grid
     interp_grid_path = paths.cache/"interp_grid_{}.ecsv".format(SphericalIsotropicDF.__name__)
     if not interp_grid_path.exists() or overwrite:
         # generate a grid of energies to evaluate the DF on
-        n_grid = 3
+        n_grid = 1024
         r = np.array([[1E-4,0,0],
                       [1E3,0,0]]).T * u.kpc
         v = mw_potential.circular_velocity(r)
@@ -48,7 +51,7 @@ def main(overwrite=False):
                                    background=mw_potential,
                                    energy_grid=np.linspace(E_min, E_max, n_grid))
 
-        tbl = QTable({'energy': iso._energy_grid * galactic['energy'],
+        tbl = QTable({'energy': iso._energy_grid * galactic['energy']/galactic['mass'],
                       'df': iso._df_grid})
         tbl.write(str(interp_grid_path), format='ascii.ecsv')
 
@@ -62,10 +65,37 @@ def main(overwrite=False):
                                    background=mw_potential)
         iso.make_ln_df_interp_func(energy_grid, log_df_grid)
 
-    # for df in [isotropic]:
-    plt.semilogy(-iso._energy_grid, iso._df_grid)
-    plt.show()
+    # plot the interpolated DF
+    fig,ax = plt.subplots(1,1,figsize=(6,4))
+    ax.semilogy(-iso._energy_grid, iso._df_grid)
+    ax.set_xlabel(r'-E [${\rm kpc}^2 \, {\rm Myr}^{-2}$]')
+    ax.set_ylabel("df")
+    fig.tight_layout()
+    fig.savefig(str(paths.plot/'df-vs-energy.pdf'))
 
+    # now I need to draw from the velocity distribution -- I can probably do this much faster
+    #   using other methods...
+    n_walkers = 16
+    v_mag = np.zeros(len(gc_mass))
+    for i,m,r in zip(range(len(gc_mass)), gc_mass, gc_radius):
+        res = minimize(lambda v: -iso.ln_f_v2(v, r), 0.1)
+        if not res.success:
+            print("Failed to optimize for cluster {}!".format(i))
+            return
+
+        p0 = np.abs(np.random.normal(res.x[0], res.x[0]*1E-2, (n_walkers,1)))
+
+        sampler = emcee.EnsembleSampler(nwalkers=n_walkers, dim=1,
+                                        lnpostfn=iso.ln_f_v2, args=(r,))
+
+        try:
+            _ = sampler.run_mcmc(p0, 128)
+        except Warning:
+            print("Failed on cluster {}!".format(i))
+            break
+
+        # the randint is redundant, but just being safe...
+        v_mag[i] = sampler.chain[np.random.randint(n_walkers), -1, 0]
 
     # # write to hdf5 file
     # with h5py.File(output_filename, 'w') as f:
