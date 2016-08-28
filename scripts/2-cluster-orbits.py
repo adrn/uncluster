@@ -35,6 +35,14 @@ class Worker(object):
         # first, optimize to find a place to initialize walkers
         res = minimize(lambda v: -self.df.ln_f_v2(v, r), 0.1, method='powell')
 
+        print(m, r)
+        return
+
+        _vv = np.linspace(0, 0.3, 128)
+        plt.figure()
+        plt.plot(_vv, np.exp([self.df.ln_f_v2(vv, r) for vv in _vv]))
+        plt.show()
+
         if not res.success:
             logger.error("Failed to optimize for cluster {}!".format(i))
             return np.nan
@@ -111,6 +119,10 @@ def main(overwrite=False):
     #   using other methods...
     worker = Worker(df=iso, n_walkers=16)
     tasks = list(zip(range(len(gc_mass)), gc_mass, gc_radius))
+
+    worker(tasks[38])
+
+    return
 
     with Pool() as p: # use all CPUs
         v_mag = p.map(worker, tasks[:128])
