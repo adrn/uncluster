@@ -49,7 +49,8 @@ def main():
     # Mean orbital radii
     # =========================================================
 
-    gc_radius = sample_radii(size=N_gc)
+    # only take radii out to ~virial radius
+    gc_radius = sample_radii(r_max=250., size=N_gc)
 
     # =========================================================
     # Make plots
