@@ -37,7 +37,7 @@ def gc_prob_density(r):
     """
     return _hernquist.c_instance.density(np.array([[r,0,0]]))[0]
 
-def sample_radii(size=1):
+def sample_radii(r_min=0, r_max=np.inf, size=1):
     """
     Use inverse transform sampling to generate samples from a Hernquist mass profile
     approximation to Oleg's Sersic profile.
@@ -58,5 +58,15 @@ def sample_radii(size=1):
     def root_func(r, m):
         return (m - Menc(float(r)))
 
-    m = np.random.uniform(0., 1., size=size)
+    if r_min == 0.:
+        m_min = 0.
+    else:
+        m_min = Menc(r_min)
+
+    if r_max == np.inf:
+        m_max = 1.
+    else:
+        m_max = Menc(r_max)
+
+    m = np.random.uniform(m_min, m_max, size=size)
     return np.array([root(root_func, 1., args=(m[i],)).x[0] for i in range(size)]) * u.kpc
