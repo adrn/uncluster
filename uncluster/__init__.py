@@ -24,7 +24,7 @@ class OutputPaths(object):
 
         for path in [self.cache, self.plot]:
             if not path.exists:
-                os.makedirs(path)
+                os.makedirs(str(path))
 
         # names of cache filenames
         self.gc_properties = self.cache.joinpath("1-gc-properties.ecsv")
