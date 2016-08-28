@@ -12,7 +12,7 @@ M_tot = 5E10 * u.Msun
 t_evolve = 11.5 * u.Gyr
 
 # Background Milky Way potential
-mw_potential = gp.CompositePotential()
+mw_potential = gp.CCompositePotential()
 mw_potential['disk'] = gp.MiyamotoNagaiPotential(m=4E10, a=3.5, b=0.14, units=galactic)
 mw_potential['bulge'] = gp.HernquistPotential(m=1E10, c=1.1, units=galactic)
 
