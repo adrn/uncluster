@@ -17,8 +17,7 @@ The broad overview of what happens here is:
    potential. Integrate the orbits of the clusters in the total background
    potential and determine eccentricities.
 3. Solve for the mass-loss history of the cluster using the differential
-   equations in Gnedin et al. (2014), including the eccentricities measured from
-   the integrated cluster orbits.
+   equations in Gnedin et al. (2014), including the eccentricities measured from the integrated cluster orbits.
 4. Run streakline-like models along each cluster orbit and post-process the
    samples to impose the mass-loss histories from step 5.
 
