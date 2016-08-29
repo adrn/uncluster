@@ -72,7 +72,6 @@ def main(overwrite=False):
     # read radii and masses from cached file
     gc_props = QTable.read(str(paths.gc_properties), format='ascii.ecsv')
 
-    t_grid = np.linspace(0., t_evolve.to(u.Gyr).value, 4096)
     gc_mass = gc_props['mass'].to(u.Msun).value
     gc_radius = gc_props['radius'].to(u.kpc).value
     n_clusters = len(gc_props)
