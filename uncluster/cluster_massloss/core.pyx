@@ -36,11 +36,11 @@ cdef double t_iso(double M):
     """ Isolation disruption timescale (2-body evaporation)"""
     return 17. * (M / 2E5) # Gyr, Eq. 5
 
-cdef double t_df(double r, double M, double vc):
+cdef double t_df(double r, double M, double vc, double ecc):
     cdef double f_e = 0.5 # HACK: this f_e is WRONG -- should be computed from orbit...
     return 64. * r*r * vc/283. * (2E5/M) * f_e # Gyr, Eq. 8
 
-cdef void dy_dt(double M, double r2, double t,
+cdef void dy_dt(double M, double r2, double ecc, double t,
                 gsl_interp_accel *acc, gsl_interp *spline,
                 double *rgrid, double *vcgrid,
                 double *out):
@@ -63,9 +63,9 @@ cdef void dy_dt(double M, double r2, double t,
         min_t = iso
 
     out[0] = -M / min_t
-    out[1] = -r2 / t_df(r, M, vc)
+    out[1] = -r2 / t_df(r, M, vc, ecc)
 
-cdef _solve_mass_radius(double M0, double r0, double *t_grid, int n_times,
+cdef _solve_mass_radius(double M0, double r0, double ecc, double *t_grid, int n_times,
                         gsl_interp_accel *acc, gsl_interp *spline,
                         double *rgrid, double *vcgrid):
     cdef:
@@ -85,7 +85,7 @@ cdef _solve_mass_radius(double M0, double r0, double *t_grid, int n_times,
 
     # use a forward Euler method instead...
     for i in range(n_times-1):
-        dy_dt(M[i], r2[i], t_grid[i], acc, spline,
+        dy_dt(M[i], r2[i], ecc, t_grid[i], acc, spline,
               rgrid, vcgrid, &y_dot[0])
 
         M[i+1] = M[i] + y_dot[0]*dt
@@ -96,23 +96,25 @@ cdef _solve_mass_radius(double M0, double r0, double *t_grid, int n_times,
 
     return i, np.array(M), np.sqrt(np.array(r2))
 
-cpdef solve_mass_radius(_M0s, _r0s, _t_grid):
+cpdef solve_mass_radius(_M0s, _r0s, _eccs, _t_grid):
     """
-    solve_mass_radius(M0s, r0s, t_grid)
+    solve_mass_radius(M0s, r0s, eccs, t_grid)
     """
 
     _M0s = np.atleast_1d(_M0s)
     _r0s = np.atleast_1d(_r0s)
+    _eccs = np.atleast_1d(_eccs)
     _t_grid = np.atleast_1d(_t_grid)
 
-    if _M0s.ndim > 1 or _r0s.ndim > 1 or _t_grid.ndim > 1:
+    if _M0s.ndim > 1 or _r0s.ndim > 1 or _eccs.ndim > 1 or _t_grid.ndim > 1:
         raise ValueError("input arrays must be 1d")
 
     cdef:
         # make memoryviews
-        double [::1] M0s = _M0s
-        double [::1] r0s = _r0s
-        double [::1] t_grid = _t_grid
+        double[::1] M0s = _M0s
+        double[::1] r0s = _r0s
+        double[::1] t_grid = _t_grid
+        double[::1] eccs = _eccs
         int n_clusters = len(_M0s)
         int n_times = len(t_grid)
         int i
@@ -140,7 +142,8 @@ cpdef solve_mass_radius(_M0s, _r0s, _t_grid):
     all_M = []
     all_r = []
     for i in range(n_clusters):
-        idx, M, r = _solve_mass_radius(M0s[i], r0s[i], &t_grid[0], n_times,
+        idx, M, r = _solve_mass_radius(M0s[i], r0s[i], eccs[i],
+                                       &t_grid[0], n_times,
                                        acc, vc_func, &r_grid[0], &vc_grid[0])
         i_disrupt[i] = idx
         all_M.append(M)

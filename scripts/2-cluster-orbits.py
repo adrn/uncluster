@@ -121,7 +121,7 @@ def main(overwrite=False):
     tasks = list(zip(range(n_clusters), gc_mass, gc_radius))
 
     # HACK: only do 256 for now for speed
-    DERP = 128
+    DERP = 512
     n_clusters = DERP
     gc_radius = gc_radius[:DERP]
     with Pool() as p: # use all CPUs
@@ -163,6 +163,9 @@ def main(overwrite=False):
         r_f[i] = np.sqrt(np.sum(w.pos[:,-1]**2)).value
 
         if np.isnan(ecc[i]):
+            # plt.figure()
+            # w.plot()
+            # plt.show()
             raise ValueError("Failed to compute eccentricity from "
                              "integrated orbit {} -- increase n_steps!"
                              .format(i))
