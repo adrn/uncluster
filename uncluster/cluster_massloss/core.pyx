@@ -91,7 +91,7 @@ cdef _solve_mass_radius(double M0, double r0, double ecc, double *t_grid, int n_
         M[i+1] = M[i] + y_dot[0]*dt
         r2[i+1] = r2[i] + y_dot[1]*dt
 
-        if isnan(y_dot[0]) or isnan(y_dot[1]):
+        if isnan(y_dot[0]) or isnan(y_dot[1]) or M[i+1]<=0:
             break
 
     return i, np.array(M), np.sqrt(np.array(r2))
