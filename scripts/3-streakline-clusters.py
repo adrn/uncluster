@@ -140,15 +140,19 @@ def main(overwrite=False):
     # ---------------------------------------------------------
     # Now we'll run some streakline models:
 
-    for i in range(n_clusters):
+    for i in range(n_clusters)[1:]:
         if np.isnan(t_disrupt[i]): continue
 
         one_w0 = w0[i]
-        t_cross = np.sqrt(np.sum(one_w0.pos**2)) / np.sqrt(np.sum(one_w0.vel**2))
-        dt = t_cross / 1024 # MAGIC NUMBER
+        # r = np.sqrt(np.sum(one_w0.pos**2))
+        # v = np.sqrt(np.sum(one_w0.vel**2))
+        # t_cross = r / v
+        # dt = t_cross / 1024 # MAGIC NUMBER
+        dt = 1.*u.Myr # MAGIC NUMBER
         gc_orbit = mw_potential.integrate_orbit(one_w0, dt=dt,
                                                 t1=0.*u.Gyr, t2=11.5*u.Gyr,
                                                 Integrator=gi.DOPRI853Integrator)
+        logger.debug("Orbit integrated for {} steps".format(len(gc_orbit.t)))
 
         # plt.figure()
         # gc_orbit.plot()
@@ -172,7 +176,7 @@ def main(overwrite=False):
         idx = (release_time*u.Myr) < (t_disrupt[i]*u.Gyr)
 
         plt.figure()
-        stream[idx].plot(alpha=0.4)
+        stream[idx].plot(alpha=0.1)
         plt.show()
 
         break
