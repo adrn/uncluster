@@ -81,7 +81,7 @@ def main(overwrite=False):
 
     # filename to cache interpolation grid
     interp_grid_path = join(paths.cache, "interp_grid_{}.ecsv").format(df_name)
-    if not interp_grid_path.exists() or overwrite:
+    if not exists(interp_grid_path) or overwrite:
         # generate a grid of energies to evaluate the DF on
         n_grid = 1024
         r = np.array([[1E-4,0,0],
