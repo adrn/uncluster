@@ -34,8 +34,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
 
-from uncluster import OutputPaths
-paths = OutputPaths()
+from uncluster.paths import Paths
+paths = Paths()
 from uncluster.config import t_evolve, mw_potential
 from uncluster.cluster_massloss import solve_mass_radius
 

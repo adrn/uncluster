@@ -17,8 +17,8 @@ import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
 
-from uncluster import OutputPaths
-paths = OutputPaths()
+from uncluster.paths import Paths
+paths = Paths()
 
 # from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
 from uncluster.cluster_distributions.apw import sample_radii, sample_masses

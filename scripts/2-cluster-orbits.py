@@ -21,8 +21,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import minimize
 
-from uncluster import OutputPaths
-paths = OutputPaths()
+from uncluster.paths import Paths
+paths = Paths()
 from uncluster.config import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
