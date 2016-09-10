@@ -95,14 +95,14 @@ def main(overwrite=False):
                                    energy_grid=np.linspace(E_min, E_max, n_grid))
 
         tbl = QTable({'energy': iso._energy_grid * galactic['energy']/galactic['mass'],
-                      'df': iso._df_grid})
-        tbl.write(str(interp_grid_path), format='ascii.ecsv')
+                      'log_df': iso._log_df_grid})
+        tbl.write(interp_grid_path, format='ascii.ecsv')
 
     else:
         # interpolation grid already cached
         tbl = QTable.read(str(interp_grid_path), format='ascii.ecsv')
         energy_grid = tbl['energy'].decompose(galactic).value
-        log_df_grid = np.log(tbl['df'])
+        log_df_grid = np.log(tbl['log_df'])
 
         iso = SphericalIsotropicDF(tracer=gc_prob_density,
                                    background=mw_potential)
@@ -216,30 +216,41 @@ def main(overwrite=False):
 
         f.create_dataset('ecc', data=ecc)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from argparse import ArgumentParser
     import logging
 
     # Define parser object
     parser = ArgumentParser(description="")
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
-                        default=False, help="Be chatty! (default = False)")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
-                        default=False, help="Be quiet! (default = False)")
-    parser.add_argument("-s", "--seed", dest="seed", default=8675309,
-                        type=int, help="Random number generator seed.")
-    parser.add_argument("-o", "--overwirte", action="store_true", dest="overwrite",
-                        default=False, help="Destroy everything.")
+
+    vq_group = parser.add_mutually_exclusive_group()
+    vq_group.add_argument('-v', '--verbose', action='count', default=0, dest='verbosity')
+    vq_group.add_argument('-q', '--quiet', action='count', default=0, dest='quietness')
+
+    parser.add_argument('-s', '--seed', dest='seed', default=None,
+                        type=int, help='Random number generator seed.')
+    parser.add_argument('-o', '--overwrite', action='store_true', dest='overwrite',
+                        default=False, help='Destroy everything.')
 
     args = parser.parse_args()
 
     # Set logger level based on verbose flags
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
-    elif args.quiet:
-        logger.setLevel(logging.ERROR)
-    else:
+    if args.verbosity != 0:
+        if args.verbosity == 1:
+            logger.setLevel(logging.DEBUG)
+        else: # anything >= 2
+            logger.setLevel(1)
+
+    elif args.quietness != 0:
+        if args.quietness == 1:
+            logger.setLevel(logging.WARNING)
+        else: # anything >= 2
+            logger.setLevel(logging.ERROR)
+
+    else: # default
         logger.setLevel(logging.INFO)
 
-    np.random.seed(args.seed)
-    main(args.overwrite)
+    if args.seed is not None:
+        np.random.seed(args.seed)
+
+    main(overwrite=args.overwrite)
