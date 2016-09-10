@@ -8,7 +8,8 @@ from __future__ import division, print_function
 __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
-from os.path import join
+from os.path import join, exists
+import sys
 
 # Third-party
 from astropy import log as logger
@@ -24,7 +25,13 @@ paths = Paths()
 from uncluster.cluster_distributions.apw import sample_radii, sample_masses
 from uncluster.config import f_gc, M_tot
 
-def main():
+def main(overwrite=False):
+
+    if exists(paths.gc_properties) and not overwrite:
+        logger.info("Mass and radius sampling already done. Use -o (--overwrite) "
+                    "to redo")
+        sys.exit(0)
+
     # =========================================================
     # Masses
     # =========================================================
@@ -78,29 +85,41 @@ def main():
     tbl = QTable({'mass': gc_mass, 'radius': gc_radius})
     tbl.write(paths.gc_properties, format='ascii.ecsv')
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from argparse import ArgumentParser
     import logging
 
     # Define parser object
     parser = ArgumentParser(description="")
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
-                        default=False, help="Be chatty! (default = False)")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
-                        default=False, help="Be quiet! (default = False)")
 
-    parser.add_argument("-s", "--seed", dest="seed", default=8675309,
-                        type=int, help="Random number generator seed.")
+    vq_group = parser.add_mutually_exclusive_group()
+    vq_group.add_argument('-v', '--verbose', action='count', default=0, dest='verbosity')
+    vq_group.add_argument('-q', '--quiet', action='count', default=0, dest='quietness')
+
+    parser.add_argument('-s', '--seed', dest='seed', default=None,
+                        type=int, help='Random number generator seed.')
+    parser.add_argument('-o', '--overwrite', action='store_true', dest='overwrite',
+                        default=False, help='Destroy everything.')
 
     args = parser.parse_args()
 
     # Set logger level based on verbose flags
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
-    elif args.quiet:
-        logger.setLevel(logging.ERROR)
-    else:
+    if args.verbosity != 0:
+        if args.verbosity == 1:
+            logger.setLevel(logging.DEBUG)
+        else: # anything >= 2
+            logger.setLevel(1)
+
+    elif args.quietness != 0:
+        if args.quietness == 1:
+            logger.setLevel(logging.WARNING)
+        else: # anything >= 2
+            logger.setLevel(logging.ERROR)
+
+    else: # default
         logger.setLevel(logging.INFO)
 
-    np.random.seed(args.seed)
-    main()
+    if args.seed is not None:
+        np.random.seed(args.seed)
+
+    main(overwrite=args.overwrite)
