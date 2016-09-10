@@ -114,7 +114,7 @@ def main(overwrite=False):
     ax.set_xlabel(r'-E [${\rm kpc}^2 \, {\rm Myr}^{-2}$]')
     ax.set_ylabel("df")
     fig.tight_layout()
-    fig.savefig(join(paths.plot, 'df-vs-energy-{}.pdf').format(df_name))
+    fig.savefig(join(paths.plots, 'df-vs-energy-{}.pdf').format(df_name))
 
     # now I need to draw from the velocity distribution -- using emcee to do the sampling
     worker = Worker(df=iso, n_walkers=16)
@@ -198,7 +198,7 @@ def main(overwrite=False):
     axes[1].set_ylabel('$n(r)$')
 
     fig.tight_layout()
-    fig.savefig(join(paths.plot, 'ecc-radial-profile-{}.pdf').format(df_name))
+    fig.savefig(join(paths.plots, 'ecc-radial-profile-{}.pdf').format(df_name))
 
     # Write out the initial conditions and cluster properties
     # TODO: for now, this is fine. but i might want to just write to the same ecsv file?

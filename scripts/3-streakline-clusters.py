@@ -88,7 +88,7 @@ def main(overwrite=False):
     ax.set_yscale('log')
     ax.set_title("{}/{} clusters survived".format(np.isnan(t_disrupt).sum(), len(t_disrupt)))
     ax.set_xlabel(r'$t_{\rm disrupt}$ [Gyr]')
-    fig.savefig(join(paths.plot, 'disruption-times-{}.pdf'.format(df_name)))
+    fig.savefig(join(paths.plots, 'disruption-times-{}.pdf'.format(df_name)))
 
     fig,axes = plt.subplots(1,2,figsize=(12,6))
 
@@ -133,7 +133,7 @@ def main(overwrite=False):
     axes[1].set_ylabel('GC density [kpc$^{-3}$]')
 
     fig.tight_layout()
-    fig.savefig(join(paths.plot, 'initial-final-density-{}.pdf'.format(df_name)))
+    fig.savefig(join(paths.plots, 'initial-final-density-{}.pdf'.format(df_name)))
 
     # ---------------------------------------------------------
     # Now we'll run some streakline models:

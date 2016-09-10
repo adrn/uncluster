@@ -70,7 +70,7 @@ def main():
     plt.xlabel(r"$r$ [kpc]")
     plt.ylabel(r"$M_{\rm GC}(<r)$ [M$_\odot$]")
     plt.title("Compare to Fig. 3 in G14", fontsize=16)
-    plt.savefig(join(paths.plot, 'gc-enclosed-mass.pdf'))
+    plt.savefig(join(paths.plots, 'gc-enclosed-mass.pdf'))
 
     # =========================================================
     # Cache the output
