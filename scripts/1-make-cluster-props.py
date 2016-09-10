@@ -1,14 +1,14 @@
 """
     Generate masses, mean orbital radii, and eccentricities for a sample of globular clusters
     following Gnedin et al. (2014).
-
-    TODO: the eccentricity distribution should be customizable. Right now, I assume Gaussian
-    for simplicity.
 """
 
 from __future__ import division, print_function
 
 __author__ = "adrn <adrn@astro.columbia.edu>"
+
+# Standard library
+from os.path import join
 
 # Third-party
 from astropy import log as logger
@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from uncluster import OutputPaths
-paths = OutputPaths(__file__)
+paths = OutputPaths()
 
 # from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
 from uncluster.cluster_distributions.apw import sample_radii, sample_masses
@@ -70,13 +70,13 @@ def main():
     plt.xlabel(r"$r$ [kpc]")
     plt.ylabel(r"$M_{\rm GC}(<r)$ [M$_\odot$]")
     plt.title("Compare to Fig. 3 in G14", fontsize=16)
-    plt.savefig(str(paths.plot/'gc-enclosed-mass.pdf'))
+    plt.savefig(join(paths.plot, 'gc-enclosed-mass.pdf'))
 
     # =========================================================
     # Cache the output
     # =========================================================
     tbl = QTable({'mass': gc_mass, 'radius': gc_radius})
-    tbl.write(str(paths.gc_properties), format='ascii.ecsv')
+    tbl.write(paths.gc_properties, format='ascii.ecsv')
 
 if __name__ == '__main__':
     from argparse import ArgumentParser

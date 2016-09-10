@@ -23,13 +23,11 @@ from os.path import join, exists
 from astropy import log as logger
 import astropy.coordinates as coord
 from astropy.io import fits
-from astropy.table import QTable
 from astropy.utils.data import get_pkg_data_filename
 import astropy.units as u
 import gala.integrate as gi
 import gala.dynamics as gd
-from gala.dynamics.mockstream import dissolved_fardal_stream
-import gala.potential as gp
+from gala.dynamics.mockstream import dissolved_fardal_stream, fardal_stream
 from gala.units import galactic
 import h5py
 import matplotlib.pyplot as plt
@@ -37,7 +35,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 from uncluster import OutputPaths
-paths = OutputPaths(__file__)
+paths = OutputPaths()
 from uncluster.config import t_evolve, mw_potential
 from uncluster.cluster_massloss import solve_mass_radius
 
@@ -46,13 +44,13 @@ def main(overwrite=False):
     # TODO: choose DF class at command line??
     df_name = "sph_iso"
 
-    if not exists(str(paths.gc_w0).format(df_name)):
+    if not exists(paths.gc_w0.format(df_name)):
         raise IOError("File '{}' does not exist -- have you run 1-make-cluster-props.py?"
-                      .format(str(paths.gc_w0).format(df_name)))
+                      .format(paths.gc_w0.format(df_name)))
 
     t_grid = np.linspace(0., t_evolve.to(u.Gyr).value, 4096)
 
-    with h5py.File(str(paths.gc_w0).format(df_name), 'r') as f:
+    with h5py.File(paths.gc_w0.format(df_name), 'r') as f:
         n_clusters = f.attrs['n']
 
         gc_mass = f['mass'][:]
@@ -90,7 +88,7 @@ def main(overwrite=False):
     ax.set_yscale('log')
     ax.set_title("{}/{} clusters survived".format(np.isnan(t_disrupt).sum(), len(t_disrupt)))
     ax.set_xlabel(r'$t_{\rm disrupt}$ [Gyr]')
-    fig.savefig(str(paths.plot/'disruption-times-{}.pdf'.format(df_name)))
+    fig.savefig(join(paths.plot, 'disruption-times-{}.pdf'.format(df_name)))
 
     fig,axes = plt.subplots(1,2,figsize=(12,6))
 
@@ -135,14 +133,12 @@ def main(overwrite=False):
     axes[1].set_ylabel('GC density [kpc$^{-3}$]')
 
     fig.tight_layout()
-    fig.savefig(str(paths.plot/'initial-final-density-{}.pdf'.format(df_name)))
+    fig.savefig(join(paths.plot, 'initial-final-density-{}.pdf'.format(df_name)))
 
     # ---------------------------------------------------------
     # Now we'll run some streakline models:
 
     for i in range(n_clusters)[1:]:
-        if np.isnan(t_disrupt[i]): continue
-
         one_w0 = w0[i]
         # r = np.sqrt(np.sum(one_w0.pos**2))
         # v = np.sqrt(np.sum(one_w0.vel**2))
@@ -166,10 +162,18 @@ def main(overwrite=False):
         m_t = mass_interp_func(gc_orbit.t.to(u.Gyr).value)
         m_t[m_t<0] = 0.
 
-        release_every = 4
-        stream = dissolved_fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
-                                         t_disrupt[i]*u.Gyr, release_every=release_every,
-                                         Integrator=gi.DOPRI853Integrator)
+        release_every = 4 # MAGIC NUMBER
+        if np.isnan(t_disrupt[i]): # cluster doesn't disrupt
+            logger.debug("Cluster didn't disrupt")
+            stream = fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
+                                   release_every=release_every,
+                                   Integrator=gi.DOPRI853Integrator)
+
+        else: # cluster disrupts completely
+            logger.debug("Cluster fully disrupted at {}".format(t_disrupt[i]*u.Gyr))
+            stream = dissolved_fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
+                                             t_disrupt[i]*u.Gyr, release_every=release_every,
+                                             Integrator=gi.DOPRI853Integrator)
 
         release_time = np.vstack((gc_orbit.t[::release_every].to(u.Myr).value,
                                   gc_orbit.t[::release_every].to(u.Myr).value)).T.ravel()

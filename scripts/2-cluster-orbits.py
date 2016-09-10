@@ -6,6 +6,7 @@ __author__ = "adrn <adrn@princeton.edu>"
 
 # Standard library
 from multiprocessing import Pool
+from os.path import join, exists
 
 # Third-party
 from astropy import log as logger
@@ -14,7 +15,6 @@ import astropy.units as u
 import emcee
 import gala.integrate as gi
 import gala.dynamics as gd
-import gala.potential as gp
 from gala.units import galactic
 import h5py
 import matplotlib.pyplot as plt
@@ -22,8 +22,8 @@ import numpy as np
 from scipy.optimize import minimize
 
 from uncluster import OutputPaths
-paths = OutputPaths(__file__)
-from uncluster.config import t_evolve, mw_potential
+paths = OutputPaths()
+from uncluster.config import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
 
@@ -52,7 +52,7 @@ class Worker(object):
                                         lnpostfn=self.df.ln_f_v2, args=(r,))
 
         try:
-            _ = sampler.run_mcmc(p0, 128)
+            sampler.run_mcmc(p0, 128)
         except Warning:
             logger.error("Failed to MCMC cluster {}!".format(i))
             return np.nan
@@ -65,12 +65,12 @@ class Worker(object):
         return self.work(i, m, r)
 
 def main(overwrite=False):
-    if not paths.gc_properties.exists():
+    if not exists(paths.gc_properties):
         raise IOError("File '{}' does not exist -- have you run 1-make-cluster-props.py?"
                       .format(paths.gc_properties))
 
     # read radii and masses from cached file
-    gc_props = QTable.read(str(paths.gc_properties), format='ascii.ecsv')
+    gc_props = QTable.read(paths.gc_properties, format='ascii.ecsv')
 
     gc_mass = gc_props['mass'].to(u.Msun).value
     gc_radius = gc_props['radius'].to(u.kpc).value
@@ -80,7 +80,7 @@ def main(overwrite=False):
     df_name = "sph_iso"
 
     # filename to cache interpolation grid
-    interp_grid_path = paths.cache/"interp_grid_{}.ecsv".format(df_name)
+    interp_grid_path = join(paths.cache, "interp_grid_{}.ecsv").format(df_name)
     if not interp_grid_path.exists() or overwrite:
         # generate a grid of energies to evaluate the DF on
         n_grid = 1024
@@ -114,7 +114,7 @@ def main(overwrite=False):
     ax.set_xlabel(r'-E [${\rm kpc}^2 \, {\rm Myr}^{-2}$]')
     ax.set_ylabel("df")
     fig.tight_layout()
-    fig.savefig(str(paths.plot/'df-vs-energy-{}.pdf'.format(df_name)))
+    fig.savefig(join(paths.plot, 'df-vs-energy-{}.pdf').format(df_name))
 
     # now I need to draw from the velocity distribution -- using emcee to do the sampling
     worker = Worker(df=iso, n_walkers=16)
@@ -198,11 +198,11 @@ def main(overwrite=False):
     axes[1].set_ylabel('$n(r)$')
 
     fig.tight_layout()
-    fig.savefig(str(paths.plot/'ecc-radial-profile-{}.pdf'.format(df_name)))
+    fig.savefig(join(paths.plot, 'ecc-radial-profile-{}.pdf').format(df_name))
 
     # Write out the initial conditions and cluster properties
     # TODO: for now, this is fine. but i might want to just write to the same ecsv file?
-    with h5py.File(str(paths.gc_w0).format(df_name), 'w') as f:
+    with h5py.File(paths.gc_w0.format(df_name), 'w') as f:
         f.attrs['n'] = n_clusters
 
         d = f.create_dataset('w0_pos', data=w0.pos)
