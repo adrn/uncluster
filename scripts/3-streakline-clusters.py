@@ -160,9 +160,13 @@ def main(overwrite=False):
                                     fill_value='extrapolate')
 
         m_t = mass_interp_func(gc_orbit.t.to(u.Gyr).value)
-        m_t[m_t<0] = 0.
+        m_t[m_t<=0] = 1. # HACK: can mock_stream not handle m=0?
 
         release_every = 4 # MAGIC NUMBER
+
+        logger.debug("Generating mock stream with {} particles"
+                     .format(len(gc_orbit.t)//release_every*2))
+
         if np.isnan(t_disrupt[i]): # cluster doesn't disrupt
             logger.debug("Cluster didn't disrupt")
             stream = fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,

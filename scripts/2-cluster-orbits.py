@@ -38,19 +38,6 @@ class Worker(object):
         # first, optimize to find a place to initialize walkers
         res = minimize(lambda v: -self.df.ln_f_v2(v, r), 0.01, method='powell')
 
-        print(self.df.ln_f_v2(0.01, r))
-        print(self.df.ln_f_v2(0.1, r))
-        print(self.df.ln_f_v2(0.2, r))
-
-        print(m, r, res)
-        sys.exit(0)
-        _vv = np.linspace(0, 0.3, 128)
-        plt.figure()
-        plt.plot(_vv, np.exp([self.df.ln_f_v2(vv, r) for vv in _vv]))
-        plt.show()
-
-        sys.exit(0)
-
         if not res.success:
             logger.error("Failed to optimize for cluster {}!".format(i))
             return np.nan
@@ -110,7 +97,7 @@ def main(pool, overwrite=False):
         # interpolation grid already cached
         tbl = QTable.read(str(interp_grid_path), format='ascii.ecsv')
         energy_grid = tbl['energy'].decompose(galactic).value
-        log_df_grid = np.log(tbl['log_df'])
+        log_df_grid = tbl['log_df']
 
         iso = SphericalIsotropicDF(tracer=gc_prob_density,
                                    background=mw_potential)
