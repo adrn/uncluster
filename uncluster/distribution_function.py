@@ -91,6 +91,8 @@ class SphericalIsotropicDF(DF):
                            "grid have finite values. Consider changing the bounds of "
                            "the energy grid for better sampling and more reliable "
                            "interpolation.")
+        else:
+            logger.debug("{}/{} of the DF values are finite.".format(idx.sum(), len(idx)))
 
         self._energy_grid = E_grid[idx]
         self._log_df_grid = log_df[idx]

@@ -5,8 +5,8 @@
 __author__ = "adrn <adrn@princeton.edu>"
 
 # Standard library
-from multiprocessing import Pool
 from os.path import join, exists
+import sys
 
 # Third-party
 from astropy import log as logger
@@ -26,6 +26,7 @@ paths = Paths()
 from uncluster.config import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
+from uncluster.pool import choose_pool
 
 class Worker(object):
 
@@ -35,13 +36,20 @@ class Worker(object):
 
     def work(self, i, m, r):
         # first, optimize to find a place to initialize walkers
-        res = minimize(lambda v: -self.df.ln_f_v2(v, r), 0.1, method='powell')
+        res = minimize(lambda v: -self.df.ln_f_v2(v, r), 0.01, method='powell')
 
-        # print(m, r)
-        # _vv = np.linspace(0, 0.3, 128)
-        # plt.figure()
-        # plt.plot(_vv, np.exp([self.df.ln_f_v2(vv, r) for vv in _vv]))
-        # plt.show()
+        print(self.df.ln_f_v2(0.01, r))
+        print(self.df.ln_f_v2(0.1, r))
+        print(self.df.ln_f_v2(0.2, r))
+
+        print(m, r, res)
+        sys.exit(0)
+        _vv = np.linspace(0, 0.3, 128)
+        plt.figure()
+        plt.plot(_vv, np.exp([self.df.ln_f_v2(vv, r) for vv in _vv]))
+        plt.show()
+
+        sys.exit(0)
 
         if not res.success:
             logger.error("Failed to optimize for cluster {}!".format(i))
@@ -64,7 +72,7 @@ class Worker(object):
         i,m,r = args
         return self.work(i, m, r)
 
-def main(overwrite=False):
+def main(pool, overwrite=False):
     if not exists(paths.gc_properties):
         raise IOError("File '{}' does not exist -- have you run 1-make-cluster-props.py?"
                       .format(paths.gc_properties))
@@ -120,12 +128,12 @@ def main(overwrite=False):
     worker = Worker(df=iso, n_walkers=16)
     tasks = list(zip(range(n_clusters), gc_mass, gc_radius))
 
-    # HACK: only do 256 for now for speed
-    DERP = 512
+    # HACK: only do a few for now for speed
+    DERP = 16
     n_clusters = DERP
     gc_radius = gc_radius[:DERP]
-    with Pool() as p: # use all CPUs
-        v_mag = p.map(worker, tasks[:DERP])
+    v_mag = pool.map(worker, tasks[:DERP])
+    pool.close()
     v_mag = np.array(v_mag)
 
     if np.any(np.isnan(v_mag)):
@@ -140,7 +148,8 @@ def main(overwrite=False):
 
     # need to turn the radius and velocity magnitude into 3D intial conditions
     pos,vel = iso.r_v_to_3d(gc_radius, v_mag)
-    w0 = gd.CartesianPhaseSpacePosition(pos=pos, vel=vel)
+    w0 = gd.CartesianPhaseSpacePosition(pos=pos * galactic['length'],
+                                        vel=vel * galactic['length']/galactic['time'])
 
     # to get eccentricities, integrate orbits for 10 crossing times
     t_cross = gc_radius / v_mag
@@ -150,12 +159,17 @@ def main(overwrite=False):
 
     ecc = np.zeros_like(t_cross)
     r_f = np.zeros_like(t_cross)
+    J_Jc = np.zeros_like(t_cross)
     for i in range(n_clusters):
         logger.debug('Integrating {}, dt={:.3f}'.format(i, dt[i]))
         if np.isnan(dt[i]):
             ecc[i] = np.nan
             r_f[i] = np.nan
             continue
+
+        J = np.sqrt(np.sum(w0[i].angular_momentum()**2))
+        Jc = np.sqrt(np.sum(w0[i].pos**2)) * mw_potential.circular_velocity(w0[i].pos)
+        J_Jc[i] = (J / Jc).decompose()[0]
 
         w = mw_potential.integrate_orbit(w0[i], dt=dt[i], n_steps=n_steps,
                                          Integrator=gi.DOPRI853Integrator)
@@ -216,6 +230,8 @@ def main(overwrite=False):
 
         f.create_dataset('ecc', data=ecc)
 
+        f.create_dataset('circularity', data=J_Jc)
+
 if __name__ == "__main__":
     from argparse import ArgumentParser
     import logging
@@ -231,6 +247,12 @@ if __name__ == "__main__":
                         type=int, help='Random number generator seed.')
     parser.add_argument('-o', '--overwrite', action='store_true', dest='overwrite',
                         default=False, help='Destroy everything.')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--procs', dest='n_procs', default=1,
+                       type=int, help='Number of processes.')
+    group.add_argument('--mpi', dest='mpi', default=False,
+                       action='store_true', help='Run with MPI.')
 
     args = parser.parse_args()
 
@@ -253,4 +275,5 @@ if __name__ == "__main__":
     if args.seed is not None:
         np.random.seed(args.seed)
 
-    main(overwrite=args.overwrite)
+    pool = choose_pool(mpi=args.mpi, processes=args.n_procs)
+    main(pool=pool, overwrite=args.overwrite)
