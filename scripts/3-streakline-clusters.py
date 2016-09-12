@@ -55,7 +55,7 @@ def main(overwrite=False):
 
         gc_mass = f['mass'][:]
         gc_radius = np.sqrt(np.sum(f['w0_pos'][:]**2, axis=0))
-        ecc = f['ecc'][:]
+        circul = f['circularity'][:]
 
         w0 = gd.CartesianPhaseSpacePosition(pos=f['w0_pos'][:]*u.kpc,
                                             vel=f['w0_vel'][:]*u.kpc/u.Myr)
@@ -65,9 +65,9 @@ def main(overwrite=False):
     final_r = np.zeros(n_clusters)
     all_m = []
     for i in range(n_clusters):
-        if np.isnan(ecc[i]): continue
+        if np.isnan(circul[i]): continue
         idx, m, r = solve_mass_radius(gc_mass[i], gc_radius[i],
-                                      ecc[i], t_grid)
+                                      circul[i], t_grid)
         disrupt_idx[i] = idx[0]
 
         # mass and density distribution of surviving clusters
@@ -150,10 +150,6 @@ def main(overwrite=False):
                                                 Integrator=gi.DOPRI853Integrator)
         logger.debug("Orbit integrated for {} steps".format(len(gc_orbit.t)))
 
-        # plt.figure()
-        # gc_orbit.plot()
-        # plt.show()
-
         # time grid of all_m[i] and gc_orbit are DIFFERENT - interpolate
         mass_interp_func = interp1d(t_grid[:disrupt_idx[i]],
                                     all_m[i][:disrupt_idx[i]],
@@ -188,23 +184,6 @@ def main(overwrite=False):
         plt.show()
 
         break
-
-    # # write to hdf5 file
-    # with h5py.File(output_filename, 'w') as f:
-    #     f.create_dataset('time', data=t_grid)
-    #     f.attrs['n'] = len(t_disrupt)
-
-    #     cl = f.create_group('clusters')
-    #     for i in range(len(gc_props)):
-    #         # set mass to 0 at disruption index
-    #         if not np.isnan(t_disrupt[i]):
-    #             m[i][disrupt_idx[i]] = 0.
-
-    #         g = cl.create_group(str(i))
-    #         g.create_dataset('mass', data=m[i][:disrupt_idx[i]+1])
-    #         g.create_dataset('radius', data=r[i][:disrupt_idx[i]+1])
-    #         g.attrs['t_disrupt'] = t_disrupt[i]
-    #         g.attrs['disrupt_idx'] = disrupt_idx[i]
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
