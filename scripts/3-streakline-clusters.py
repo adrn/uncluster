@@ -39,38 +39,63 @@ paths = Paths()
 from uncluster.config import t_evolve, mw_potential
 from uncluster.cluster_massloss import solve_mass_radius
 
+class MockStreamWorker(object):
+
+    def __init__(self):
+        pass
+
+    def work(self):
+        pass
+
+    def __call__(self, args):
+        args
+        return self.work()
+
 def main(overwrite=False):
 
     # TODO: choose DF class at command line??
     df_name = "sph_iso"
 
+    # Load
     if not exists(paths.gc_w0.format(df_name)):
-        raise IOError("File '{}' does not exist -- have you run 1-make-cluster-props.py?"
-                      .format(paths.gc_w0.format(df_name)))
+        raise IOError("File '{}' does not exist -- have you run 1-make-cluster-props.py and "
+                      "2-cluster-orbits.py?".format(paths.gc_w0.format(df_name)))
 
-    t_grid = np.linspace(0., t_evolve.to(u.Gyr).value, 4096)
-
+    # Load the initial conditions, output from 2-cluster-orbits.py
     with h5py.File(paths.gc_w0.format(df_name), 'r') as f:
         n_clusters = f.attrs['n']
 
-        gc_mass = f['mass'][:]
-        gc_radius = np.sqrt(np.sum(f['w0_pos'][:]**2, axis=0))
-        circul = f['circularity'][:]
+        gc_masses = f['mass'][:]
+        gc_radii = np.sqrt(np.sum(f['w0_pos'][:]**2, axis=0))
+        circuls = f['circularity'][:]
 
         w0 = gd.CartesianPhaseSpacePosition(pos=f['w0_pos'][:]*u.kpc,
                                             vel=f['w0_vel'][:]*u.kpc/u.Myr)
 
+    # Evolve the masses of the clusters by solving dM/dt using the prescription
+    #   in Gnedin et al. 2014
+    t_grid = np.linspace(0., t_evolve.to(u.Gyr).value, 4096)
     disrupt_idx = np.zeros(n_clusters).astype(int)
     final_m = np.zeros(n_clusters)
     final_r = np.zeros(n_clusters)
     all_m = []
     for i in range(n_clusters):
-        if np.isnan(circul[i]): continue
-        idx, m, r = solve_mass_radius(gc_mass[i], gc_radius[i],
-                                      circul[i], t_grid)
+        if np.isnan(circuls[i]): # if circularity is NaN, skip
+            logger.debug("Skipping cluster {} because circularity is NaN".format(i))
+            continue
+
+        # actually solve dM/dt
+        try:
+            idx, m, r = solve_mass_radius(gc_masses[i], gc_radii[i],
+                                          circuls[i], t_grid)
+        except Exception as e:
+            logger.error("Failed to solve for mass-loss histor for cluster {}: \n\t {}"
+                         .format(i, e.message))
+            continue
+
         disrupt_idx[i] = idx[0]
 
-        # mass and density distribution of surviving clusters
+        # mass and radial profile of surviving clusters
         final_m[i] = m[0][idx[0]+1]
         final_r[i] = r[0][idx[0]+1]
 
@@ -82,64 +107,66 @@ def main(overwrite=False):
 
     logger.info("{}/{} clusters survived".format(np.isnan(t_disrupt).sum(), len(t_disrupt)))
 
-    # plot the disruption times
-    fig,ax = plt.subplots(1,1)
-    ax.hist(t_disrupt[np.isfinite(t_disrupt)], bins=np.linspace(0,11.5,12))
-    ax.set_yscale('log')
-    ax.set_title("{}/{} clusters survived".format(np.isnan(t_disrupt).sum(), len(t_disrupt)))
-    ax.set_xlabel(r'$t_{\rm disrupt}$ [Gyr]')
-    fig.savefig(join(paths.plots, 'disruption-times-{}.pdf'.format(df_name)))
+    # TODO: move to a separate plot script
+    # # plot the disruption times
+    # fig,ax = plt.subplots(1,1)
+    # ax.hist(t_disrupt[np.isfinite(t_disrupt)], bins=np.linspace(0,11.5,12))
+    # ax.set_yscale('log')
+    # ax.set_title("{}/{} clusters survived".format(np.isnan(t_disrupt).sum(), len(t_disrupt)))
+    # ax.set_xlabel(r'$t_{\rm disrupt}$ [Gyr]')
+    # fig.savefig(join(paths.plots, 'disruption-times-{}.pdf'.format(df_name)))
 
-    fig,axes = plt.subplots(1,2,figsize=(12,6))
+    # fig,axes = plt.subplots(1,2,figsize=(12,6))
 
-    axes[0].hist(gc_mass, bins=np.logspace(4,7.1,9), alpha=0.3)
-    axes[0].hist(final_m[np.isnan(t_disrupt)], bins=np.logspace(3,7.1,12), alpha=0.3)
+    # axes[0].hist(gc_masses, bins=np.logspace(4,7.1,9), alpha=0.3)
+    # axes[0].hist(final_m[np.isnan(t_disrupt)], bins=np.logspace(3,7.1,12), alpha=0.3)
 
-    axes[0].set_xscale('log')
-    axes[0].set_yscale('log')
-    axes[0].set_xlim(1E3, 3E7)
-    axes[0].set_ylim(5E-1, 1E4)
-    axes[0].set_xlabel(r"Mass [${\rm M}_\odot$]")
-    axes[0].set_ylabel(r"$N$")
+    # axes[0].set_xscale('log')
+    # axes[0].set_yscale('log')
+    # axes[0].set_xlim(1E3, 3E7)
+    # axes[0].set_ylim(5E-1, 1E4)
+    # axes[0].set_xlabel(r"Mass [${\rm M}_\odot$]")
+    # axes[0].set_ylabel(r"$N$")
 
-    # read data from harris GC catalog
-    harris_filename = get_pkg_data_filename('data/harris-gc-catalog.fits',
-                                            package='uncluster')
-    harris_data = fits.getdata(harris_filename, 1)
-    c = coord.SkyCoord(ra=harris_data['RA']*u.degree, dec=harris_data['DEC']*u.degree,
-                       distance=harris_data['HELIO_DISTANCE']*u.kpc)
-    gc = c.transform_to(coord.Galactocentric)
-    harris_gc_distance = np.sqrt(np.sum(gc.cartesian.xyz**2, axis=0))
-    harris_gc_distance = harris_gc_distance.to(u.kpc).value
+    # # read data from harris GC catalog
+    # harris_filename = get_pkg_data_filename('data/harris-gc-catalog.fits',
+    #                                         package='uncluster')
+    # harris_data = fits.getdata(harris_filename, 1)
+    # c = coord.SkyCoord(ra=harris_data['RA']*u.degree, dec=harris_data['DEC']*u.degree,
+    #                    distance=harris_data['HELIO_DISTANCE']*u.kpc)
+    # gc = c.transform_to(coord.Galactocentric)
+    # harris_gc_distance = np.sqrt(np.sum(gc.cartesian.xyz**2, axis=0))
+    # harris_gc_distance = harris_gc_distance.to(u.kpc).value
 
-    bins = np.logspace(-1.,2.,16)
-    H,_ = np.histogram(gc_radius, bins=bins)
-    data_H,_ = np.histogram(harris_gc_distance, bins=bins)
+    # bins = np.logspace(-1.,2.,16)
+    # H,_ = np.histogram(gc_radiii, bins=bins)
+    # data_H,_ = np.histogram(harris_gc_distance, bins=bins)
 
-    V = 4/3*np.pi*(bins[1:]**3 - bins[:-1]**3)
-    bin_cen = (bins[1:]+bins[:-1])/2.
-    axes[1].plot(bin_cen, H/V, ls='--', marker=None)
-    axes[1].errorbar(bin_cen, data_H/V, np.sqrt(data_H)/V,
-                     color='k', marker='o', ecolor='#666666', linestyle='none')
+    # V = 4/3*np.pi*(bins[1:]**3 - bins[:-1]**3)
+    # bin_cen = (bins[1:]+bins[:-1])/2.
+    # axes[1].plot(bin_cen, H/V, ls='--', marker=None)
+    # axes[1].errorbar(bin_cen, data_H/V, np.sqrt(data_H)/V,
+    #                  color='k', marker='o', ecolor='#666666', linestyle='none')
 
-    H_f,_ = np.histogram(final_r[np.isnan(t_disrupt)], bins=bins)
-    axes[1].plot(bin_cen, H_f/V, ls='--', marker=None)
+    # H_f,_ = np.histogram(final_r[np.isnan(t_disrupt)], bins=bins)
+    # axes[1].plot(bin_cen, H_f/V, ls='--', marker=None)
 
-    axes[1].set_xscale('log')
-    axes[1].set_yscale('log')
-    axes[1].set_xlim(1E-1, 1E2)
-    axes[1].set_ylim(1E-7, 1E2)
-    axes[1].set_xlabel(r"$r$ [kpc]")
-    axes[1].set_ylabel('GC density [kpc$^{-3}$]')
+    # axes[1].set_xscale('log')
+    # axes[1].set_yscale('log')
+    # axes[1].set_xlim(1E-1, 1E2)
+    # axes[1].set_ylim(1E-7, 1E2)
+    # axes[1].set_xlabel(r"$r$ [kpc]")
+    # axes[1].set_ylabel('GC density [kpc$^{-3}$]')
 
-    fig.tight_layout()
-    fig.savefig(join(paths.plots, 'initial-final-density-{}.pdf'.format(df_name)))
+    # fig.tight_layout()
+    # fig.savefig(join(paths.plots, 'initial-final-density-{}.pdf'.format(df_name)))
 
     # ---------------------------------------------------------
-    # Now we'll run some streakline models:
+    # Now generate mock streams along the orbits
 
     for i in range(n_clusters)[1:]:
         one_w0 = w0[i]
+
         # r = np.sqrt(np.sum(one_w0.pos**2))
         # v = np.sqrt(np.sum(one_w0.vel**2))
         # t_cross = r / v
@@ -149,6 +176,12 @@ def main(overwrite=False):
                                                 t1=0.*u.Gyr, t2=11.5*u.Gyr,
                                                 Integrator=gi.DOPRI853Integrator)
         logger.debug("Orbit integrated for {} steps".format(len(gc_orbit.t)))
+
+        # don't make a stream if its final radius is outside of the virial radius
+        if np.sqrt(np.sum(gc_orbit.pos[-1]**2)) > 250*u.kpc:
+            logger.debug("Cluster {} ended up outside of the virial radius. "
+                         "Not making a mock stream".format(i))
+            continue
 
         # time grid of all_m[i] and gc_orbit are DIFFERENT - interpolate
         mass_interp_func = interp1d(t_grid[:disrupt_idx[i]],
