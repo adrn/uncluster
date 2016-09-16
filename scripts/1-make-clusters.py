@@ -52,25 +52,6 @@ def main(pool, df_name="sph_iso", overwrite=False):
     gc_cache_path = join(paths.cache, "gc-properties-{}").format(df_name)
     interp_grid_path = join(paths.cache, "interp_grid_{}.ecsv").format(df_name)
 
-    # - Sample masses until the total mass in GCs is equal to a fraction (f_gc) of the
-    #   total mass in stars (M_tot):
-    maxiter = 64000 # MAGIC NUMBER
-    gc_mass = sample_masses(size=maxiter)
-    for i in range(maxiter):
-        _sum = gc_mass[:i+1].sum()
-        if _sum >= f_gc*M_tot:
-            break
-
-    if i == (maxiter-1):
-        raise ValueError("Reached maximum number of iterations when sampling masses.")
-
-    gc_mass = gc_mass[:i+1]
-    n_clusters = len(gc_mass)
-    logger.info("Sampled {} cluster masses (M_tot = {:.2e})".format(n_clusters, gc_mass.sum()))
-
-    # only take radii out to ~virial radius
-    gc_radius = sample_radii(r_max=250., size=n_clusters)
-
     # Now we need to evaluate the log(df) at a grid of energies so we can
     #   sample velocities.
     df = SphericalIsotropicDF(tracer=gc_prob_density,
@@ -98,6 +79,31 @@ def main(pool, df_name="sph_iso", overwrite=False):
         log_df_grid = tbl['log_df']
 
         df.make_ln_df_interp_func(energy_grid, log_df_grid)
+
+    if exists(gc_cache_path) and not overwrite:
+        logger.info("Cache file {} already exists. Use --overwrite to overwrite."
+                    .format(gc_cache_path))
+        pool.close()
+        sys.exit(0)
+
+    # - Sample masses until the total mass in GCs is equal to a fraction (f_gc) of the
+    #   total mass in stars (M_tot):
+    maxiter = 64000 # MAGIC NUMBER
+    gc_mass = sample_masses(size=maxiter)
+    for i in range(maxiter):
+        _sum = gc_mass[:i+1].sum()
+        if _sum >= f_gc*M_tot:
+            break
+
+    if i == (maxiter-1):
+        raise ValueError("Reached maximum number of iterations when sampling masses.")
+
+    gc_mass = gc_mass[:i+1]
+    n_clusters = len(gc_mass)
+    logger.info("Sampled {} cluster masses (M_tot = {:.2e})".format(n_clusters, gc_mass.sum()))
+
+    # only take radii out to ~virial radius
+    gc_radius = sample_radii(r_max=250., size=n_clusters)
 
     n_samples = 100
     tasks = [(df,r,n_samples) for r in gc_radius.decompose(galactic).value]
@@ -145,6 +151,8 @@ def main(pool, df_name="sph_iso", overwrite=False):
     if idx.sum() != len(idx):
         logger.warning("{}/{} failed circularities".format(n_clusters-idx.sum(),
                                                            n_clusters))
+
+    pool.close()
 
     # Write out the initial conditions and cluster properties
     with h5py.File(gc_cache_path, 'w') as f:
