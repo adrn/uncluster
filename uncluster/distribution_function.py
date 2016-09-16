@@ -12,6 +12,11 @@ from scipy.integrate import quad
 from scipy.interpolate import interp1d
 from scipy.optimize import root
 
+def df_worker(task):
+    df,energy = task
+    return derivative(lambda H: quad(df.eddington_integrand, H, 0, args=(H,))[0],
+                      energy, dx=np.abs(1E-4*energy))
+
 class DF(object):
 
     def _validate_rad_func(self, func):
@@ -66,7 +71,7 @@ class SphericalIsotropicDF(DF):
         dp_dphi = derivative(self._density_phi, phi, dx=1E-3*phi)
         return dp_dphi / np.sqrt(phi - H)
 
-    def compute_ln_df_grid(self, E_grid, pool=None):
+    def compute_ln_df_grid(self, E_grid, pool):
         """
         Parameters
         ----------
@@ -74,10 +79,11 @@ class SphericalIsotropicDF(DF):
             Array of energies to compute the DF along. If not provided, it's assumed you'll pass
             your own energy grid and DF values to: `SphericalIsotropicDF.make_ln_df_interp_func`.
         """
-        df = np.zeros(len(E_grid))
-        for i,energy in enumerate(E_grid):
-            df[i] = derivative(lambda H: quad(self.eddington_integrand, H, 0, args=(H,))[0],
-                               energy, dx=np.abs(1E-4*energy))
+
+        tasks = [(self,energy) for energy in E_grid]
+        results = pool.map(df_worker, tasks)
+        df = np.array(results)
+
         log_df = np.log(df / (np.sqrt(8.)*np.pi**2))
         idx = np.isfinite(log_df)
 
@@ -107,8 +113,10 @@ class SphericalIsotropicDF(DF):
         return self.log_df_interp(E) + 2*np.log(v)
 
     def r_v_to_3d(self, r, v):
-        r = np.atleast_1d(r)
-        v = np.atleast_1d(v)
+        _runit = r.unit
+        _vunit = v.unit
+        r = np.atleast_1d(r).value
+        v = np.atleast_1d(v).value
 
         phi = np.random.uniform(0, 2*np.pi, size=r.size)
         theta = np.arccos(2*np.random.uniform(size=r.size) - 1)
@@ -120,4 +128,4 @@ class SphericalIsotropicDF(DF):
         v_sph = coord.PhysicsSphericalRepresentation(phi=phi_v*u.radian, theta=theta_v*u.radian, r=v*u.one)
         v_xyz = v_sph.represent_as(coord.CartesianRepresentation).xyz
 
-        return xyz, v_xyz
+        return xyz*_runit, v_xyz*_vunit

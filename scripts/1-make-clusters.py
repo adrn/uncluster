@@ -12,14 +12,13 @@ import sys
 from astropy import log as logger
 from astropy.table import QTable
 import astropy.units as u
-import emcee
 import gala.integrate as gi
 import gala.dynamics as gd
 from gala.units import galactic
 import h5py
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import minimize
+from schwimmbad import choose_pool
 
 from uncluster.paths import Paths
 paths = Paths()
@@ -31,38 +30,20 @@ from uncluster.config import f_gc, M_tot
 from uncluster.config import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
-from uncluster.pool import choose_pool
 
-class Worker(object):
+def v_worker(task):
+    df,r,n_samples = task
 
-    def __init__(self, df, n_walkers=16):
-        self.df = df
-        self.n_walkers = n_walkers
+    # rejection sample to get velocity
+    vs = np.random.uniform(0, 0.5, n_samples) # MAGIC NUMBER 0.5 (max velocity)
+    ll = np.array([df.ln_f_v2(v, r) for v in vs])
+    uu = np.random.uniform(size=n_samples)
+    vs = vs[uu < np.exp(ll - ll.max())]
 
-    def work(self, i, m, r):
-        # first, optimize to find a place to initialize walkers
-        res = minimize(lambda v: -self.df.ln_f_v2(v, r), 0.01, method='powell')
-
-        if not res.success:
-            logger.error("Failed to optimize for cluster {}!".format(i))
-            return np.nan
-
-        p0 = np.abs(np.random.normal(res.x, res.x*1E-2, (self.n_walkers,1)))
-        sampler = emcee.EnsembleSampler(nwalkers=self.n_walkers, dim=1,
-                                        lnpostfn=self.df.ln_f_v2, args=(r,))
-
-        try:
-            sampler.run_mcmc(p0, 128)
-        except Warning:
-            logger.error("Failed to MCMC cluster {}!".format(i))
-            return np.nan
-
-        # the randint is redundant, but just being safe...
-        return sampler.chain[np.random.randint(self.n_walkers), -1, 0]
-
-    def __call__(self, args):
-        i,m,r = args
-        return self.work(i, m, r)
+    if len(vs) <= 1:
+        raise ValueError("Rejection sampling returned <=1 samples - raise n_samples")
+    i = np.random.randint(len(vs))
+    return vs[i]
 
 # TODO: specify df name at command line?
 def main(pool, df_name="sph_iso", overwrite=False):
@@ -100,7 +81,7 @@ def main(pool, df_name="sph_iso", overwrite=False):
         r = np.array([[1E-4,0,0],
                       [1E3,0,0]]).T * u.kpc
         v = mw_potential.circular_velocity(r)
-        E_min = (mw_potential.value(r[:,0]) + 0.5*v[0]**2).decompose(galactic).value[0]
+        E_min = mw_potential.value(r[:,0]).decompose(galactic).value[0]
         E_max = (mw_potential.value(r[:,1]) + 0.5*v[1]**2).decompose(galactic).value[0]
         E_grid = np.linspace(E_min, E_max, n_grid)
 
@@ -118,20 +99,11 @@ def main(pool, df_name="sph_iso", overwrite=False):
 
         df.make_ln_df_interp_func(energy_grid, log_df_grid)
 
-    return
+    n_samples = 100
+    tasks = [(df,r,n_samples) for r in gc_radius.decompose(galactic).value]
 
-
-    # now I need to draw from the velocity distribution -- using emcee to do the sampling
-    worker = Worker(df=iso, n_walkers=16)
-    tasks = list(zip(range(n_clusters), gc_mass, gc_radius))
-
-    # HACK: only do a few for now for speed
-    DERP = 16
-    n_clusters = DERP
-    gc_radius = gc_radius[:DERP]
-    v_mag = pool.map(worker, tasks[:DERP])
-    pool.close()
-    v_mag = np.array(v_mag)
+    results = pool.map(v_worker, tasks)
+    v_mag = np.array(results) * u.kpc/u.Myr
 
     if np.any(np.isnan(v_mag)):
         logger.warning("Failed to find velocities for {}/{} orbits."
@@ -139,28 +111,25 @@ def main(pool, df_name="sph_iso", overwrite=False):
 
     q = np.zeros((3,n_clusters))
     q[0] = gc_radius
-    E = 0.5*(v_mag*u.kpc/u.Myr)**2 + mw_potential.potential(q)
+    E = 0.5*v_mag**2 + mw_potential.potential(q)
     if np.any(E.value[np.isfinite(E.value)] > 0):
         logger.warning("{} unbound orbits.".format((E > 0.).sum()))
 
     # need to turn the radius and velocity magnitude into 3D intial conditions
-    pos,vel = iso.r_v_to_3d(gc_radius, v_mag)
-    w0 = gd.CartesianPhaseSpacePosition(pos=pos * galactic['length'],
-                                        vel=vel * galactic['length']/galactic['time'])
+    pos,vel = df.r_v_to_3d(gc_radius, v_mag)
+    w0 = gd.CartesianPhaseSpacePosition(pos=pos, vel=vel)
 
-    # to get eccentricities, integrate orbits for 10 crossing times
+    # compute circularities and final radii for the orbits
     t_cross = gc_radius / v_mag
 
-    dt = t_cross / 128.
-    n_steps = 8192 # 64 crossing times
+    dt = t_cross / 256.
+    n_steps = 8192 # 32 crossing times
 
-    ecc = np.zeros_like(t_cross)
-    r_f = np.zeros_like(t_cross)
-    J_Jc = np.zeros_like(t_cross)
+    r_f = np.zeros_like(t_cross.value)
+    J_Jc = np.zeros_like(t_cross.value)
     for i in range(n_clusters):
         logger.debug('Integrating {}, dt={:.3f}'.format(i, dt[i]))
         if np.isnan(dt[i]):
-            ecc[i] = np.nan
             r_f[i] = np.nan
             continue
 
@@ -170,22 +139,12 @@ def main(pool, df_name="sph_iso", overwrite=False):
 
         w = mw_potential.integrate_orbit(w0[i], dt=dt[i], n_steps=n_steps,
                                          Integrator=gi.DOPRI853Integrator)
-        ecc[i] = w.eccentricity()
         r_f[i] = np.sqrt(np.sum(w.pos[:,-1]**2)).value
 
-        if np.isnan(ecc[i]):
-            # plt.figure()
-            # w.plot()
-            # plt.show()
-            raise ValueError("Failed to compute eccentricity from "
-                             "integrated orbit {} -- increase n_steps!"
-                             .format(i))
-
-    # plot the eccentricity distribution, initial radial profile, final radial profile
-    idx = np.isfinite(ecc)
+    idx = np.isfinite(J_Jc)
     if idx.sum() != len(idx):
-        logger.warning("{}/{} failed eccentricities".format(n_clusters-idx.sum(),
-                                                            n_clusters))
+        logger.warning("{}/{} failed circularities".format(n_clusters-idx.sum(),
+                                                           n_clusters))
 
     # Write out the initial conditions and cluster properties
     with h5py.File(gc_cache_path, 'w') as f:
@@ -200,7 +159,6 @@ def main(pool, df_name="sph_iso", overwrite=False):
         d = f.create_dataset('mass', data=gc_mass)
         d.attrs['unit'] = 'Msun'
 
-        f.create_dataset('ecc', data=ecc)
         f.create_dataset('circularity', data=J_Jc)
 
 if __name__ == "__main__":
@@ -220,8 +178,8 @@ if __name__ == "__main__":
                         default=False, help='Destroy everything.')
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--procs', dest='n_procs', default=1,
-                       type=int, help='Number of processes.')
+    group.add_argument('--ncores', dest='n_cores', default=1,
+                       type=int, help='Number of CPU cores to use.')
     group.add_argument('--mpi', dest='mpi', default=False,
                        action='store_true', help='Run with MPI.')
 
@@ -246,5 +204,5 @@ if __name__ == "__main__":
     if args.seed is not None:
         np.random.seed(args.seed)
 
-    pool = choose_pool(mpi=args.mpi, processes=args.n_procs)
+    pool = choose_pool(mpi=args.mpi, processes=args.n_cores)
     main(pool=pool, overwrite=args.overwrite)
