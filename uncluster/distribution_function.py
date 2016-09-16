@@ -21,7 +21,7 @@ class DF(object):
 
 class SphericalIsotropicDF(DF):
 
-    def __init__(self, tracer, background, energy_grid=None):
+    def __init__(self, tracer, background):
         """
         Parameters
         ----------
@@ -30,9 +30,6 @@ class SphericalIsotropicDF(DF):
         background : callable, :class:`~gala.potential.PotentialBase`
             This can either be (1) a function / callable that accepts a single radius, or (2) an
             instance of a :class:`~gala.potential.PotentialBase` subclass.
-        energy_grid : array_like (optional)
-            Array of energies to compute the DF along. If not provided, it's assumed you'll pass
-            your own energy grid and DF values to: `SphericalIsotropicDF.make_ln_df_interp_func`.
         """
 
         self.background = background
@@ -50,15 +47,6 @@ class SphericalIsotropicDF(DF):
             self._density_phi = self._density_wrap
         else:
             raise ValueError("Invalid tracer density function") # TODO: why?
-
-        # TODO: some way to automatically estimate energy_grid...
-        # if energy_grid is None:
-        #     curlyE = np.linspace(1E-2, 1.1, 256) # MAGIC NUMBER
-
-        #     # estimate typical energy
-        #     energy_grid = -curlyE * E_scale**2
-        if energy_grid is not None:
-            self._make_ln_df_grid(energy_grid)
 
     def _value_wrap(self, r):
         return float(self.background._value(np.array([[r,0.,0.]]).T))
@@ -78,7 +66,14 @@ class SphericalIsotropicDF(DF):
         dp_dphi = derivative(self._density_phi, phi, dx=1E-3*phi)
         return dp_dphi / np.sqrt(phi - H)
 
-    def _make_ln_df_grid(self, E_grid):
+    def compute_ln_df_grid(self, E_grid, pool=None):
+        """
+        Parameters
+        ----------
+        E_grid : array_like (optional)
+            Array of energies to compute the DF along. If not provided, it's assumed you'll pass
+            your own energy grid and DF values to: `SphericalIsotropicDF.make_ln_df_interp_func`.
+        """
         df = np.zeros(len(E_grid))
         for i,energy in enumerate(E_grid):
             df[i] = derivative(lambda H: quad(self.eddington_integrand, H, 0, args=(H,))[0],

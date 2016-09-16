@@ -21,4 +21,3 @@ M_h = 1E12 * u.Msun
 rs_h = 20. * u.kpc
 v_c = sqrt(((log(2.) - 0.5) * (G * M_h / rs_h)).decompose(galactic).value)
 mw_potential['halo'] = gp.SphericalNFWPotential(v_c=v_c, r_s=rs_h, units=galactic)
-

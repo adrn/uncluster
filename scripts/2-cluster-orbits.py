@@ -23,6 +23,11 @@ from scipy.optimize import minimize
 
 from uncluster.paths import Paths
 paths = Paths()
+
+# from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
+from uncluster.cluster_distributions.apw import sample_radii, sample_masses
+from uncluster.config import f_gc, M_tot
+
 from uncluster.config import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
@@ -59,38 +64,50 @@ class Worker(object):
         i,m,r = args
         return self.work(i, m, r)
 
-def main(pool, overwrite=False):
-    if not exists(paths.gc_properties):
-        raise IOError("File '{}' does not exist -- have you run 1-make-cluster-props.py?"
-                      .format(paths.gc_properties))
+# TODO: specify df name at command line?
+def main(pool, df_name="sph_iso", overwrite=False):
 
-    # read radii and masses from cached file
-    gc_props = QTable.read(paths.gc_properties, format='ascii.ecsv')
-
-    gc_mass = gc_props['mass'].to(u.Msun).value
-    gc_radius = gc_props['radius'].to(u.kpc).value
-    n_clusters = len(gc_props)
-
-    # TODO: choose DF class at command line??
-    df_name = "sph_iso"
-
-    # filename to cache interpolation grid
+    # cache filenames
+    gc_cache_path = join(paths.cache, "gc-properties-{}").format(df_name)
     interp_grid_path = join(paths.cache, "interp_grid_{}.ecsv").format(df_name)
+
+    # - Sample masses until the total mass in GCs is equal to a fraction (f_gc) of the
+    #   total mass in stars (M_tot):
+    maxiter = 64000 # MAGIC NUMBER
+    gc_mass = sample_masses(size=maxiter)
+    for i in range(maxiter):
+        _sum = gc_mass[:i+1].sum()
+        if _sum >= f_gc*M_tot:
+            break
+
+    if i == (maxiter-1):
+        raise ValueError("Reached maximum number of iterations when sampling masses.")
+
+    gc_mass = gc_mass[:i+1]
+    n_clusters = len(gc_mass)
+    logger.info("Sampled {} cluster masses (M_tot = {:.2e})".format(n_clusters, gc_mass.sum()))
+
+    # only take radii out to ~virial radius
+    gc_radius = sample_radii(r_max=250., size=n_clusters)
+
+    # Now we need to evaluate the log(df) at a grid of energies so we can
+    #   sample velocities.
+    df = SphericalIsotropicDF(tracer=gc_prob_density,
+                              background=mw_potential)
     if not exists(interp_grid_path) or overwrite:
         # generate a grid of energies to evaluate the DF on
-        n_grid = 1024
+        n_grid = 1024 # MAGIC NUMBER
         r = np.array([[1E-4,0,0],
                       [1E3,0,0]]).T * u.kpc
         v = mw_potential.circular_velocity(r)
-        E_min = (mw_potential.value(r[:,0]) + 0.5*v**2).decompose(galactic).value[0]
-        E_max = (mw_potential.value(r[:,1]) + 0.5*v**2).decompose(galactic).value[0]
+        E_min = (mw_potential.value(r[:,0]) + 0.5*v[0]**2).decompose(galactic).value[0]
+        E_max = (mw_potential.value(r[:,1]) + 0.5*v[1]**2).decompose(galactic).value[0]
+        E_grid = np.linspace(E_min, E_max, n_grid)
 
-        iso = SphericalIsotropicDF(tracer=gc_prob_density,
-                                   background=mw_potential,
-                                   energy_grid=np.linspace(E_min, E_max, n_grid))
+        df.compute_ln_df_grid(E_grid, pool)
 
-        tbl = QTable({'energy': iso._energy_grid * galactic['energy']/galactic['mass'],
-                      'log_df': iso._log_df_grid})
+        tbl = QTable({'energy': df._energy_grid * galactic['energy']/galactic['mass'],
+                      'log_df': df._log_df_grid})
         tbl.write(interp_grid_path, format='ascii.ecsv')
 
     else:
@@ -99,17 +116,10 @@ def main(pool, overwrite=False):
         energy_grid = tbl['energy'].decompose(galactic).value
         log_df_grid = tbl['log_df']
 
-        iso = SphericalIsotropicDF(tracer=gc_prob_density,
-                                   background=mw_potential)
-        iso.make_ln_df_interp_func(energy_grid, log_df_grid)
+        df.make_ln_df_interp_func(energy_grid, log_df_grid)
 
-    # plot the interpolated DF
-    fig,ax = plt.subplots(1,1,figsize=(6,4))
-    ax.semilogy(-iso._energy_grid, np.exp(iso._log_df_grid))
-    ax.set_xlabel(r'-E [${\rm kpc}^2 \, {\rm Myr}^{-2}$]')
-    ax.set_ylabel("df")
-    fig.tight_layout()
-    fig.savefig(join(paths.plots, 'df-vs-energy-{}.pdf').format(df_name))
+    return
+
 
     # now I need to draw from the velocity distribution -- using emcee to do the sampling
     worker = Worker(df=iso, n_walkers=16)
@@ -177,33 +187,8 @@ def main(pool, overwrite=False):
         logger.warning("{}/{} failed eccentricities".format(n_clusters-idx.sum(),
                                                             n_clusters))
 
-    fig,axes = plt.subplots(1, 2, figsize=(10,5))
-
-    axes[0].hist(ecc[idx], bins=np.linspace(0,1,16))
-    axes[0].set_xlabel('$e$')
-
-    # compute radial profile of clusters -- initial and final
-    bins = np.logspace(-1, 3, 32)
-    H_i,_ = np.histogram(gc_radius, bins=bins)
-    H_f,_ = np.histogram(r_f[idx], bins=bins)
-
-    V = 4/3*np.pi*(bins[1:]**3 - bins[:-1]**3)
-    bin_cen = (bins[1:]+bins[:-1])/2.
-    axes[1].loglog(bin_cen, [gc_prob_density(x) for x in bin_cen],
-                   marker=None, lw=2., ls='--', label='target')
-    axes[1].loglog(bin_cen, H_i / V / n_clusters, marker=None, label='initial')
-    axes[1].loglog(bin_cen, H_f / V / len(r_f), marker=None, label='final', color='r')
-
-    axes[1].legend(loc='lower left')
-    axes[1].set_xlabel('$r$')
-    axes[1].set_ylabel('$n(r)$')
-
-    fig.tight_layout()
-    fig.savefig(join(paths.plots, 'ecc-radial-profile-{}.pdf').format(df_name))
-
     # Write out the initial conditions and cluster properties
-    # TODO: for now, this is fine. but i might want to just write to the same ecsv file?
-    with h5py.File(paths.gc_w0.format(df_name), 'w') as f:
+    with h5py.File(gc_cache_path, 'w') as f:
         f.attrs['n'] = n_clusters
 
         d = f.create_dataset('w0_pos', data=w0.pos)
@@ -216,7 +201,6 @@ def main(pool, overwrite=False):
         d.attrs['unit'] = 'Msun'
 
         f.create_dataset('ecc', data=ecc)
-
         f.create_dataset('circularity', data=J_Jc)
 
 if __name__ == "__main__":
