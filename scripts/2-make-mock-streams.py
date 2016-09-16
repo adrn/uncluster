@@ -33,6 +33,7 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
+from schwimmbad import choose_pool
 
 from uncluster.paths import Paths
 paths = Paths()
@@ -51,18 +52,16 @@ class MockStreamWorker(object):
         args
         return self.work()
 
-def main(overwrite=False):
-
-    # TODO: choose DF class at command line??
-    df_name = "sph_iso"
+# TODO: specify df name at command line
+def main(gc_properties_file, pool, overwrite=False):
 
     # Load
-    if not exists(paths.gc_w0.format(df_name)):
-        raise IOError("File '{}' does not exist -- have you run 1-make-cluster-props.py and "
-                      "2-cluster-orbits.py?".format(paths.gc_w0.format(df_name)))
+    if not exists(gc_properties_file):
+        raise IOError("File '{}' does not exist -- have you run "
+                      "1-make-clusters.py?".format(gc_properties_file))
 
-    # Load the initial conditions, output from 2-cluster-orbits.py
-    with h5py.File(paths.gc_w0.format(df_name), 'r') as f:
+    # Load the initial conditions
+    with h5py.File(gc_properties_file, 'r') as f:
         n_clusters = f.attrs['n']
 
         gc_masses = f['mass'][:]
@@ -107,64 +106,10 @@ def main(overwrite=False):
 
     logger.info("{}/{} clusters survived".format(np.isnan(t_disrupt).sum(), len(t_disrupt)))
 
-    # TODO: move to a separate plot script
-    # # plot the disruption times
-    # fig,ax = plt.subplots(1,1)
-    # ax.hist(t_disrupt[np.isfinite(t_disrupt)], bins=np.linspace(0,11.5,12))
-    # ax.set_yscale('log')
-    # ax.set_title("{}/{} clusters survived".format(np.isnan(t_disrupt).sum(), len(t_disrupt)))
-    # ax.set_xlabel(r'$t_{\rm disrupt}$ [Gyr]')
-    # fig.savefig(join(paths.plots, 'disruption-times-{}.pdf'.format(df_name)))
-
-    # fig,axes = plt.subplots(1,2,figsize=(12,6))
-
-    # axes[0].hist(gc_masses, bins=np.logspace(4,7.1,9), alpha=0.3)
-    # axes[0].hist(final_m[np.isnan(t_disrupt)], bins=np.logspace(3,7.1,12), alpha=0.3)
-
-    # axes[0].set_xscale('log')
-    # axes[0].set_yscale('log')
-    # axes[0].set_xlim(1E3, 3E7)
-    # axes[0].set_ylim(5E-1, 1E4)
-    # axes[0].set_xlabel(r"Mass [${\rm M}_\odot$]")
-    # axes[0].set_ylabel(r"$N$")
-
-    # # read data from harris GC catalog
-    # harris_filename = get_pkg_data_filename('data/harris-gc-catalog.fits',
-    #                                         package='uncluster')
-    # harris_data = fits.getdata(harris_filename, 1)
-    # c = coord.SkyCoord(ra=harris_data['RA']*u.degree, dec=harris_data['DEC']*u.degree,
-    #                    distance=harris_data['HELIO_DISTANCE']*u.kpc)
-    # gc = c.transform_to(coord.Galactocentric)
-    # harris_gc_distance = np.sqrt(np.sum(gc.cartesian.xyz**2, axis=0))
-    # harris_gc_distance = harris_gc_distance.to(u.kpc).value
-
-    # bins = np.logspace(-1.,2.,16)
-    # H,_ = np.histogram(gc_radiii, bins=bins)
-    # data_H,_ = np.histogram(harris_gc_distance, bins=bins)
-
-    # V = 4/3*np.pi*(bins[1:]**3 - bins[:-1]**3)
-    # bin_cen = (bins[1:]+bins[:-1])/2.
-    # axes[1].plot(bin_cen, H/V, ls='--', marker=None)
-    # axes[1].errorbar(bin_cen, data_H/V, np.sqrt(data_H)/V,
-    #                  color='k', marker='o', ecolor='#666666', linestyle='none')
-
-    # H_f,_ = np.histogram(final_r[np.isnan(t_disrupt)], bins=bins)
-    # axes[1].plot(bin_cen, H_f/V, ls='--', marker=None)
-
-    # axes[1].set_xscale('log')
-    # axes[1].set_yscale('log')
-    # axes[1].set_xlim(1E-1, 1E2)
-    # axes[1].set_ylim(1E-7, 1E2)
-    # axes[1].set_xlabel(r"$r$ [kpc]")
-    # axes[1].set_ylabel('GC density [kpc$^{-3}$]')
-
-    # fig.tight_layout()
-    # fig.savefig(join(paths.plots, 'initial-final-density-{}.pdf'.format(df_name)))
-
     # ---------------------------------------------------------
     # Now generate mock streams along the orbits
 
-    for i in range(n_clusters)[1:]:
+    for i in range(n_clusters):
         one_w0 = w0[i]
 
         # r = np.sqrt(np.sum(one_w0.pos**2))
@@ -178,8 +123,8 @@ def main(overwrite=False):
         logger.debug("Orbit integrated for {} steps".format(len(gc_orbit.t)))
 
         # don't make a stream if its final radius is outside of the virial radius
-        if np.sqrt(np.sum(gc_orbit.pos[-1]**2)) > 250*u.kpc:
-            logger.debug("Cluster {} ended up outside of the virial radius. "
+        if np.sqrt(np.sum(gc_orbit.pos[-1]**2)) > 500*u.kpc:
+            logger.debug("Cluster {} ended up way outside of the virial radius. "
                          "Not making a mock stream".format(i))
             continue
 
@@ -192,6 +137,7 @@ def main(overwrite=False):
         m_t[m_t<=0] = 1. # HACK: can mock_stream not handle m=0?
 
         release_every = 4 # MAGIC NUMBER
+        # TODO: can weight each particle by (4*dt) * (dm/dt) -- the amount of mass in that particle
 
         logger.debug("Generating mock stream with {} particles"
                      .format(len(gc_orbit.t)//release_every*2))
@@ -207,6 +153,7 @@ def main(overwrite=False):
             stream = dissolved_fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
                                              t_disrupt[i]*u.Gyr, release_every=release_every,
                                              Integrator=gi.DOPRI853Integrator)
+        logger.debug("Done generating mock stream.")
 
         release_time = np.vstack((gc_orbit.t[::release_every].to(u.Myr).value,
                                   gc_orbit.t[::release_every].to(u.Myr).value)).T.ravel()
@@ -224,25 +171,41 @@ if __name__ == '__main__':
 
     # Define parser object
     parser = ArgumentParser(description="")
-    parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
-                        default=False, help="Be chatty! (default = False)")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet",
-                        default=False, help="Be quiet! (default = False)")
 
-    parser.add_argument("-s", "--seed", dest="seed", default=8675309,
-                        type=int, help="Random number generator seed.")
-    parser.add_argument("-o", "--overwirte", action="store_true", dest="overwrite",
-                        default=False, help="Destroy everything.")
+    vq_group = parser.add_mutually_exclusive_group()
+    vq_group.add_argument('-v', '--verbose', action='count', default=0, dest='verbosity')
+    vq_group.add_argument('-q', '--quiet', action='count', default=0, dest='quietness')
+
+    parser.add_argument('-o', '--overwrite', action='store_true', dest='overwrite',
+                        default=False, help='Destroy everything.')
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--ncores', dest='n_cores', default=1,
+                       type=int, help='Number of CPU cores to use.')
+    group.add_argument('--mpi', dest='mpi', default=False,
+                       action='store_true', help='Run with MPI.')
+
+    parser.add_argument('-f', '--gc-props-file', dest='gc_properties', required=True,
+                        type=str, help='Path to the cache file containing cluster properties.')
 
     args = parser.parse_args()
 
     # Set logger level based on verbose flags
-    if args.verbose:
-        logger.setLevel(logging.DEBUG)
-    elif args.quiet:
-        logger.setLevel(logging.ERROR)
-    else:
+    if args.verbosity != 0:
+        if args.verbosity == 1:
+            logger.setLevel(logging.DEBUG)
+        else: # anything >= 2
+            logger.setLevel(1)
+
+    elif args.quietness != 0:
+        if args.quietness == 1:
+            logger.setLevel(logging.WARNING)
+        else: # anything >= 2
+            logger.setLevel(logging.ERROR)
+
+    else: # default
         logger.setLevel(logging.INFO)
 
-    np.random.seed(args.seed)
-    main(args.overwrite)
+    pool = choose_pool(mpi=args.mpi, processes=args.n_cores)
+    main(gc_properties_file=args.gc_properties,
+         pool=pool, overwrite=args.overwrite)
