@@ -16,3 +16,4 @@ dependencies:
   - pip:
     - astro-gala
     - cythongsl
+    - schwimmbad
