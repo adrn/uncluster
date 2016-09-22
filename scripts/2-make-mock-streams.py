@@ -81,10 +81,11 @@ class MockStreamWorker(object):
         gc_orbit = mw_potential.integrate_orbit(w0, dt=dt,
                                                 t1=0.*u.Gyr, t2=11.5*u.Gyr, # TODO: hard-coded!!
                                                 Integrator=gi.DOPRI853Integrator)
+
         logger.debug("Orbit integrated for {} steps".format(len(gc_orbit.t)))
 
         # don't make a stream if its final radius is outside of the virial radius
-        if np.sqrt(np.sum(gc_orbit.pos[-1]**2)) > 500*u.kpc:
+        if np.sqrt(np.sum(gc_orbit.pos[:,-1]**2)) > 500*u.kpc:
             r0 = np.sqrt(np.sum(w0.pos**2))
             v0 = np.sqrt(np.sum(w0.vel**2))
             logger.debug("Cluster {} ended up way outside of the virial radius. "
@@ -138,7 +139,6 @@ class MockStreamWorker(object):
         else:
             i, t_disrupt, stream, particle_weights = result
 
-            # TODO: cache filename!
             with h5py.File(self.cache_file, 'a') as root:
                 f = root['mock_streams']
 
