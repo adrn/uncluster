@@ -192,6 +192,7 @@ def main(cache_file, pool, overwrite=False):
 
     worker = MockStreamWorker(t_grid=t_grid,
                               cache_file=cache_file,
+                              overwrite=overwrite,
                               release_every=128) # HACK
     tasks = [[i, gc_masses[i], gc_radii[i], circs[i], w0[i], dt] for i in range(n_clusters)]
 
