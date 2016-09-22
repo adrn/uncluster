@@ -143,13 +143,13 @@ class MockStreamWorker(object):
                 g.attrs['t_disrupt'] = t_disrupt
 
                 d = g.create_dataset('stream_pos', data=stream.pos.value)
-                d.unit = str(stream.pos.unit)
+                d.attrs['unit'] = str(stream.pos.unit)
 
                 d = g.create_dataset('stream_vel', data=stream.vel.value)
-                d.unit = str(stream.vel.unit)
+                d.attrs['unit'] = str(stream.vel.unit)
 
                 d = g.create_dataset('stream_weights', data=particle_weights)
-                d.unit = str(u.Msun)
+                d.attrs['unit'] = str(u.Msun)
 
 # TODO: specify df name at command line
 def main(cache_file, pool, overwrite=False):
