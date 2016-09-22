@@ -40,12 +40,19 @@ from uncluster.cluster_massloss import solve_mass_radius
 
 class MockStreamWorker(object):
 
-    def __init__(self, cache_file, t_grid, release_every=4): # MAGIC DEFAULT
+    def __init__(self, cache_file, t_grid, overwrite=False, release_every=4): # MAGIC DEFAULT
         self.cache_file = cache_file
         self.t_grid = t_grid
+        self.overwrite = overwrite
         self.release_every = release_every
 
     def work(self, i, initial_mass, initial_radius, circularity, w0, dt):
+
+        with h5py.File(self.cache_file, 'r') as root:
+            if str(i) in root['mock_streams'] and not self.overwrite:
+                logger.debug("Cluster {} already done.".format(i))
+                return
+
         logger.debug("Cluster {} initial mass, radius = ({:.0e}, {:.2f})"
                      .format(i, initial_mass, initial_radius))
 
@@ -129,29 +136,40 @@ class MockStreamWorker(object):
             i, t_disrupt, stream, particle_weights = result
 
             # TODO: cache filename!
-            with h5py.File(self.cache_file, 'a') as f:
+            with h5py.File(self.cache_file, 'a') as root:
+                f = root['mock_streams']
+
                 g = f.create_group(str(i))
                 g.attrs['t_disrupt'] = t_disrupt
 
-                d = g.create_dataset('stream_pos', stream.pos.value)
+                d = g.create_dataset('stream_pos', data=stream.pos.value)
                 d.unit = str(stream.pos.unit)
 
-                d = g.create_dataset('stream_vel', stream.vel.value)
+                d = g.create_dataset('stream_vel', data=stream.vel.value)
                 d.unit = str(stream.vel.unit)
 
-                d = g.create_dataset('stream_weights', particle_weights)
+                d = g.create_dataset('stream_weights', data=particle_weights)
                 d.unit = str(u.Msun)
 
 # TODO: specify df name at command line
-def main(gc_properties_file, pool, overwrite=False):
+def main(cache_file, pool, overwrite=False):
 
-    # Load
-    if not exists(gc_properties_file):
+    if not exists(cache_file):
+        cache_file = join(paths.cache, cache_file)
+
+    if not exists(cache_file):
         raise IOError("File '{}' does not exist -- have you run "
-                      "1-make-clusters.py?".format(gc_properties_file))
+                      "1-make-clusters.py?".format(cache_file))
+
+    else:
+        with h5py.File(cache_file, 'r') as f:
+            if 'cluster_properties' not in f:
+                raise IOError("File '{}' does not contain a 'cluster_properties' group "
+                              "-- have you run 1-make-clusters.py?".format(cache_file))
 
     # Load the initial conditions
-    with h5py.File(gc_properties_file, 'r') as f:
+    with h5py.File(cache_file, 'a') as root:
+        f = root['cluster_properties']
         n_clusters = f.attrs['n']
 
         gc_masses = f['mass'][:]
@@ -160,6 +178,9 @@ def main(gc_properties_file, pool, overwrite=False):
 
         w0 = gd.CartesianPhaseSpacePosition(pos=f['w0_pos'][:]*u.kpc,
                                             vel=f['w0_vel'][:]*u.kpc/u.Myr)
+
+        if 'mock_streams' not in root:
+            root.create_group('mock_streams')
 
     # Used to evolve the masses of the clusters by solving dM/dt using the prescription
     #   in Gnedin et al. 2014 (in worker above)
@@ -170,6 +191,7 @@ def main(gc_properties_file, pool, overwrite=False):
     dt = 1*u.Myr
 
     worker = MockStreamWorker(t_grid=t_grid,
+                              cache_file=cache_file,
                               release_every=128) # HACK
     tasks = [[i, gc_masses[i], gc_radii[i], circs[i], w0[i], dt] for i in range(n_clusters)]
 
@@ -200,8 +222,9 @@ if __name__ == '__main__':
     group.add_argument('--mpi', dest='mpi', default=False,
                        action='store_true', help='Run with MPI.')
 
-    parser.add_argument('-f', '--gc-props-file', dest='gc_properties', required=True,
-                        type=str, help='Path to the cache file containing cluster properties.')
+    parser.add_argument('-f', '--cache-file', dest='cache_file', required=True,
+                        type=str, help='Path to the cache file which should already '
+                                       'contain the cluster properties.')
 
     args = parser.parse_args()
 
@@ -222,5 +245,6 @@ if __name__ == '__main__':
         logger.setLevel(logging.INFO)
 
     pool = choose_pool(mpi=args.mpi, processes=args.n_cores)
-    main(gc_properties_file=args.gc_properties,
-         pool=pool, overwrite=args.overwrite)
+    logger.info("Using pool: {}".format(pool.__class__))
+
+    main(cache_file=args.cache_file, pool=pool, overwrite=args.overwrite)

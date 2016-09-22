@@ -49,7 +49,7 @@ def v_worker(task):
 def main(pool, df_name="sph_iso", overwrite=False):
 
     # cache filenames
-    gc_cache_path = join(paths.cache, "gc-properties-{}").format(df_name)
+    cache_path = join(paths.cache, "{}.hdf5").format(df_name)
     interp_grid_path = join(paths.cache, "interp_grid_{}.ecsv").format(df_name)
 
     # Now we need to evaluate the log(df) at a grid of energies so we can
@@ -80,11 +80,16 @@ def main(pool, df_name="sph_iso", overwrite=False):
 
         df.make_ln_df_interp_func(energy_grid, log_df_grid)
 
-    if exists(gc_cache_path) and not overwrite:
-        logger.info("Cache file {} already exists. Use --overwrite to overwrite."
-                    .format(gc_cache_path))
-        pool.close()
-        sys.exit(0)
+    if exists(cache_path):
+        with h5py.File(cache_path, 'r') as f:
+            if 'cluster_properties' in f and not overwrite:
+                logger.info("Cache file {} already contains results. Use --overwrite "
+                            "to overwrite.".format(cache_path))
+                pool.close()
+                sys.exit(0)
+    else:
+        with h5py.File(cache_path, 'w') as f:
+            pass
 
     # - Sample masses until the total mass in GCs is equal to a fraction (f_gc) of the
     #   total mass in stars (M_tot):
@@ -108,7 +113,8 @@ def main(pool, df_name="sph_iso", overwrite=False):
     n_samples = 100
     tasks = [(df,r,n_samples) for r in gc_radius.decompose(galactic).value]
 
-    results = pool.map(v_worker, tasks)
+    # TODO: something is broken in pool.map() that this doesn't work...
+    results = [r for r in pool.map(v_worker, tasks)]
     v_mag = np.array(results) * u.kpc/u.Myr
 
     if np.any(np.isnan(v_mag)):
@@ -155,7 +161,8 @@ def main(pool, df_name="sph_iso", overwrite=False):
     pool.close()
 
     # Write out the initial conditions and cluster properties
-    with h5py.File(gc_cache_path, 'w') as f:
+    with h5py.File(cache_path, 'a') as root:
+        f = root.create_group('cluster_properties')
         f.attrs['n'] = n_clusters
 
         d = f.create_dataset('w0_pos', data=w0.pos)
@@ -213,4 +220,6 @@ if __name__ == "__main__":
         np.random.seed(args.seed)
 
     pool = choose_pool(mpi=args.mpi, processes=args.n_cores)
+    logger.info("Using pool: {}".format(pool.__class__))
+
     main(pool=pool, overwrite=args.overwrite)
