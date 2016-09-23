@@ -31,8 +31,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 from schwimmbad import choose_pool
 
-from uncluster.paths import Paths
-paths = Paths()
 from uncluster.config import t_evolve, mw_potential
 from uncluster.cluster_massloss import solve_mass_radius
 
@@ -156,6 +154,8 @@ class MockStreamWorker(object):
 
 # TODO: specify df name at command line
 def main(cache_file, pool, overwrite=False):
+    from uncluster.paths import Paths
+    paths = Paths()
 
     if not exists(cache_file):
         cache_file = join(paths.cache, cache_file)

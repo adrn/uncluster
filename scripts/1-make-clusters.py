@@ -20,9 +20,6 @@ import numpy as np
 from scipy.optimize import minimize
 from schwimmbad import choose_pool
 
-from uncluster.paths import Paths
-paths = Paths()
-
 # from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
 from uncluster.cluster_distributions.apw import sample_radii, sample_masses
 from uncluster.config import f_gc, M_tot
@@ -47,6 +44,8 @@ def v_worker(task):
 
 # TODO: specify df name at command line?
 def main(pool, df_name="sph_iso", overwrite=False):
+    from uncluster.paths import Paths
+    paths = Paths()
 
     # cache filenames
     cache_path = join(paths.cache, "{}.hdf5").format(df_name)
