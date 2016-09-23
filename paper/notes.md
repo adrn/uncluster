@@ -1,6 +1,9 @@
 Notes
 =====
 
+2016-08-16
+----------
+
 Scope of the paper should be:
 
 * Predict number of globular cluster streams, lengths, densities
@@ -12,10 +15,10 @@ Scope of the paper should be:
   conserved quantities
     - In particular, do they show up over a smooth halo background in this space?
 
+2016-09-13
+----------
 
 The plan, as sent to Oleg:
-
-My plan for generating the mock stellar halos:
 
 1) I've defined a potential model for the Milky Way that is a combination of a
    disk (Miyamoto-Nagai), bulge (Hernquist), and spherical halo (NFW). I
@@ -71,3 +74,20 @@ scenarios. Here I'm imagining that we can measure chemical abundances for all
 of the halo stars and can separate out "stars that were formed in globular
 clusters" vs. otherwise, that way I don't have to worry about super-imposing
 the rest of the stellar halo on top of this. Does that sound crazy to you?
+
+2016-09-22
+----------
+
+After thinking a bit about what we want to measure, some slight modifications to the above:
+
+1) Define a potential model for the Milky Way that is a combination of a disk (Miyamoto-Nagai),
+   bulge (Hernquist), and spherical halo (NFW) by roughly matching to rotation curve measurements
+   over the radii (4 kpc < R < 14 kpc). For the last 10 Gyr, the disk should grow linearly or as
+   some function of time consistent with the star formation rate, and the halo should grow
+   according to accretion seen in simulations.
+
+2) Consider the following scenarios for the initial population of globular clusters: (1) in place
+   at t=-10 Gyr with a spherical, isotropic DF, (2) constant isotropic accretion, (3) accreted
+   cosmologically with satellite galaxies with S_N = [2, 4, 8, 16]. In each of these cases, the
+   prediction for the number of MW globular clusters is different because we need to end with the
+   ~150 we see today. Therefore, the number disrupted and the number of streams will be different.

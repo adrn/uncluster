@@ -1,13 +1,24 @@
-The properties of the initial population of globular clusters around Milky
-Way-like galaxies are still unknown. Recent work has suggested that the Milky
-Way initially hosted close to 10,000 globular clusters, the vast majority of
-which have disrupted and contributed a significant fraction of the mass of the
-stellar halo and bulge. This would have profound implications for the chemical
-and dynamical structure of both the bulge and the stellar halo of our Galaxy. We
-consider several scenarios for the kinematics and mass distribution of the
-initial clusters and predict for each (1) the number of observable thin stellar
-streams today, (2) the clustering in conserved kinematic quantities, and (3) the
-fraction of the mass of the stellar halo contributed by disrupted globular
-clusters. We will discuss how to test these predictions with kinematic
-measurements from the Gaia mission, deep photometry from the LSST and WFIRST,
-and planned, large-area spectroscopic surveys.
+Recent work studying the detailed chemical abundances of Milky Way halo stars
+and the kinematic evolution of globular clusters suggest that (1) a significant
+fraction of the stellar halo around the Milky Way may be composed of disrupted
+globular clusters, and, consequently, that (2) the present globular cluster
+population may be a small fraction ($<$5\%) of the initial population. These
+suggestions make strong predictions about the structure---in kinematics and
+chemistry---of halo stars that depend strongly on the origins of the initial
+globular cluster system. Here we generate a set of mock stellar halos formed
+from disrupted globular clusters with a range of formation scenarios that all
+broadly reproduce the present-day spatial distribution and mass function of the
+remnant cluster population. We use these halos to predict the kinematic
+clustering of halo stars and the expected number of thin stellar streams around
+the Milky Way for each of the explored scenarios. We consider two main classes
+of initial conditions: (1) all accreted, in which all globular clusters were
+deposited early on through mergers with other galaxies, and (2) all formed in
+situ, in which all globular clusters formed early on in the Galaxy. For each,
+we consider cluster orbits drawn from isotropic, radially-anisotropic, and
+tangentially-anisotropic distribution functions. We find that the end-of-Gaia
+kinematic measurements for XX stars within XX kpc of the Sun will distinguish
+the scenarios considered in this work. We also predict that within XX kpc of
+the Galactic center, there are XX thin, recently fully-disrupted
+globular-cluster streams. Of these, XX have high enough surface brightness to
+have already been detected, in agreement with the number of thin streams
+discovered thus far.
