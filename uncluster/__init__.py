@@ -12,7 +12,7 @@ from ._astropy_init import *
 
 # For egg_info test builds to pass, put package imports here.
 if not _ASTROPY_SETUP_:
-    from .conf import *
+    from .config import *
     from . import cluster_distributions
     from . import cluster_massloss
     from . import paths
