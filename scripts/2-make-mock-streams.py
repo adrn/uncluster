@@ -46,13 +46,10 @@ class MockStreamWorker(object):
 
     def work(self, i, initial_mass, initial_radius, circularity, w0, dt):
 
-        with h5py.File(self.cache_file, 'a') as root:
+        with h5py.File(self.cache_file, 'r') as root:
             if str(i) in root['mock_streams'] and not self.overwrite:
                 logger.debug("Cluster {} already done.".format(i))
                 return
-
-            elif str(i) in root['mock_streams'] and self.overwrite:
-                del root['mock_streams'][str(i)]
 
         logger.debug("Cluster {} initial mass, radius = ({:.0e}, {:.2f})"
                      .format(i, initial_mass, initial_radius))
@@ -145,6 +142,9 @@ class MockStreamWorker(object):
 
             with h5py.File(self.cache_file, 'a') as root:
                 f = root['mock_streams']
+
+                if str(i) in f:
+                    del root['mock_streams'][str(i)]
 
                 g = f.create_group(str(i))
                 g.attrs['t_disrupt'] = t_disrupt
