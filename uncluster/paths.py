@@ -31,8 +31,7 @@ class Paths(object):
         self.figures = join(self.root, "paper", "figures")
 
         for path in [self.cache, self.plots, self.figures]:
-            if not exists(path):
-                os.makedirs(str(path))
+            os.makedirs(str(path), exist_ok=True)
 
         # store paths for special cache files
         self.gc_properties = join(self.cache, "1-gc-properties.ecsv")

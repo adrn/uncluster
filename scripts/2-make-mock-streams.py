@@ -31,8 +31,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 from schwimmbad import choose_pool
 
-from uncluster.paths import Paths
-paths = Paths()
 from uncluster.config import t_evolve, mw_potential
 from uncluster.cluster_massloss import solve_mass_radius
 
@@ -101,17 +99,23 @@ class MockStreamWorker(object):
         logger.debug("Generating mock stream with {} particles"
                      .format(len(gc_orbit.t)//self.release_every*2))
 
-        if np.isnan(t_disrupt): # cluster doesn't disrupt
-            logger.debug("Cluster didn't disrupt")
-            stream = fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
-                                   release_every=self.release_every,
-                                   Integrator=gi.DOPRI853Integrator)
+        try:
+            if np.isnan(t_disrupt): # cluster doesn't disrupt
+                logger.debug("Cluster didn't disrupt")
+                stream = fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
+                                       release_every=self.release_every,
+                                       Integrator=gi.DOPRI853Integrator)
 
-        else: # cluster disrupts completely
-            logger.debug("Cluster fully disrupted at {}".format(t_disrupt*u.Myr))
-            stream = dissolved_fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
-                                             t_disrupt*u.Myr, release_every=self.release_every,
-                                             Integrator=gi.DOPRI853Integrator)
+            else: # cluster disrupts completely
+                logger.debug("Cluster fully disrupted at {}".format(t_disrupt*u.Myr))
+                stream = dissolved_fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
+                                                 t_disrupt*u.Myr, release_every=self.release_every,
+                                                 Integrator=gi.DOPRI853Integrator)
+        except Exception as e:
+            logger.error("Failed to generate mock stream for cluster {}: \n\t {}"
+                         .format(i, e.message))
+            return
+
         logger.debug("Done generating mock stream.")
 
         release_time = np.vstack((gc_orbit.t[::self.release_every].to(u.Myr).value,
@@ -156,6 +160,8 @@ class MockStreamWorker(object):
 
 # TODO: specify df name at command line
 def main(cache_file, pool, overwrite=False):
+    from uncluster.paths import Paths
+    paths = Paths()
 
     if not exists(cache_file):
         cache_file = join(paths.cache, cache_file)
