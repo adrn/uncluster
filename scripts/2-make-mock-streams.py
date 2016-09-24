@@ -18,6 +18,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 
 # Standard library
 from os.path import join, exists
+import sys
 
 # Third-party
 from astropy import log as logger
@@ -61,9 +62,9 @@ class MockStreamWorker(object):
         try:
             idx, m, r = solve_mass_radius(initial_mass, initial_radius,
                                           circularity, self.t_grid/1000.) # Myr to Gyr
-        except Exception as e:
+        except:
             logger.error("Failed to solve for mass-loss history for cluster {}: \n\t {}"
-                         .format(i, e.message))
+                         .format(i, sys.exc_info()[0]))
             return
 
         # solve_mass_radius always returns arrays?
@@ -111,9 +112,9 @@ class MockStreamWorker(object):
                 stream = dissolved_fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
                                                  t_disrupt*u.Myr, release_every=self.release_every,
                                                  Integrator=gi.DOPRI853Integrator)
-        except Exception as e:
+        except:
             logger.error("Failed to generate mock stream for cluster {}: \n\t {}"
-                         .format(i, e.message))
+                         .format(i, sys.exc_info()[0]))
             return
 
         logger.debug("Done generating mock stream.")
