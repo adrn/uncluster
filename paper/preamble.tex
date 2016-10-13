@@ -14,6 +14,11 @@
             filecolor=linkcolor,urlcolor=linkcolor}
 \hypersetup{pageanchor=false}
 
+\newcommand{\documentname}{\textsl{Article}}
+\newcommand{\sectionname}{Section}
+\newcommand{\figname}{Figure}
+\newcommand{\eqname}{Equation}
+
 % For referee
 \newcommand{\changes}[1]{{\color{red} #1}}
 
@@ -45,11 +50,12 @@
 \newcommand{\todo}[1]{{\color{red} TODO: #1}}
 
 % Packages / projects / programming
-\newcommand{\package}[1]{\textsf{#1}}
+\newcommand{\package}[1]{\textsl{#1}}
+\newcommand{\acronym}[1]{{\small{#1}}}
 \newcommand{\project}[1]{\package{#1}}
 \newcommand{\rewinder}{\project{Rewinder}}
 \newcommand{\streakline}{\project{Streakline}}
 \newcommand{\superfreq}{\project{SuperFreq}}
 
 \newcommand{\github}{\project{GitHub}}
-\newcommand{\python}{\texttt{Python}}
+\newcommand{\python}{\project{Python}}

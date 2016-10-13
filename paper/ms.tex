@@ -94,6 +94,56 @@ in agreement with the number of thin streams discovered thus far.
 
 with 10000 GCs, surface brightness fluctuations at z=2?!
 
+Explain GC population of MW,
+
+\section{Methods}\label{sec:methods}
+
+The Milky Way hosts at least XX metal-poor globular clusters (GCs) at
+Galactocentric radii between $XX < r < YY~\kpc$ that were likely accreted from
+tidally-disrupted satellite galaxies;
+the mass and spherically-averaged density distribution of the known GCs is shown
+in \figname~\ref{xx}.
+Our goal is to reproduce these properties of the present-day GC population with
+different models for the initial globular cluster population.
+We consider three qualitatively different initial conditions, broadly outlined
+as:
+\begin{enumerate}
+  \item The globular cluster system is in place at redshift $z=3$ with orbits
+    drawn from a spherical, isotropic distribution function (\acronym{DF}).
+  \item GCs are accreted with a constant accretion rate from redshift $z=3$ to
+    present with a spherical, isotropic \acronym{DF}.
+  \item GCs are accreted cosmologically from tidally-disrupted satellite
+    galaxies with a given mean specific frequency of globular clusters, $S_N$.
+\end{enumerate}
+With a mass model for the Milky Way, an initial mass function for the cluster
+masses, and orbital initial conditions for the GCs from the above cases, we can
+evolve a given GC population forward to present day and compare the population
+of surviving clusters with that observed around the Milky Way.
+For each case, we add clusters until we find the initial number of GCs that are
+required to produce the ones that survive until present day.
+
+For the gravitational potential of the Milky Way, we use a multi-component
+mass-model consisting of a spherical Navarro-Frenk-White (NFW) dark matter halo
+(\citealt{Navarro:1996}), a Miyamoto-Nagai disk (\citealt{Miyamoto:1975}), and a
+mixture of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model the
+mass distribution in the central Galaxy:
+\begin{align}
+
+\end{align}
+
+
+
+In all cases, we solve for the mass evolution of the clusters using the
+prescription used in \citet{Gnedin:2014}.
+
+For cases where a GC is accreted from a satellite galaxy, we first solve for
+the mass-loss of the cluster within the satellite system up until it passes the
+tidal radius.
+At this point, we begin evolving the mass of the cluster in the tidal field of
+the Milky Way instead.
+When generating mock stellar streams for the GCs, we only consider stars that
+are disrupted after the GC is stripped from its parent.
+
 \section{Conclusions}\label{sec:conclusions}
 
 \acknowledgements
