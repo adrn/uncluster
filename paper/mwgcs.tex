@@ -1,15 +1,16 @@
-%\documentclass[numberedappendix]{emulateapj}
-\documentclass[letterpaper,12pt,preprint]{aastex}
+\documentclass[manuscript, letterpaper]{aastex6}
 
-\input{preamble.tex}
+\include{gitstuff}
+\include{aastexmods}
+\include{preamble}
 
 \begin{document}
 
 \title{The stellar halo of the Milky Way and globular cluster debris I: predictions for kinematic structure}
 \author{Adrian~M.~Price-Whelan\altaffilmark{\pu,\adrn},
-        Oleg Gnedin\altaffilmark{\umich},
-        Kathryn V. Johnston\altaffilmark{\colum},
-        David N. Spergel\altaffilmark{\cca,\pu}
+        Oleg Gnedin\altaffilmark{\umich}
+%        Kathryn V. Johnston\altaffilmark{\colum}
+%        David N. Spergel\altaffilmark{\cca,\pu}
 %       Hans-Walter~Rix\altaffilmark{\mpia}
 }
 
@@ -17,8 +18,8 @@
 \newcommand{\pu}{1}
 \newcommand{\adrn}{2}
 \newcommand{\umich}{3}
-\newcommand{\colum}{4}
-\newcommand{\cca}{5}
+% \newcommand{\colum}{4}
+% \newcommand{\cca}{5}
 %\newcommand{\mpia}{6}
 
 \altaffiltext{\pu}{Department of Astrophysical Sciences,
@@ -30,13 +31,13 @@
 \altaffiltext{\umich}{Department of Astronomy ??,
                       University of Michigan,
                       USA}
-\altaffiltext{\colum}{Department of Astronomy,
-                      Columbia University,
-                      550 W 120th St.,
-                      New York, NY 10027, USA}
+% \altaffiltext{\colum}{Department of Astronomy,
+%                       Columbia University,
+%                       550 W 120th St.,
+%                       New York, NY 10027, USA}
 % TODO: Simons
-\altaffiltext{\cca}{Simons Center for Computational Astrophysics,
-                      New York, NY XXX, USA}
+% \altaffiltext{\cca}{Simons Center for Computational Astrophysics,
+%                       New York, NY XXX, USA}
 %\altaffiltext{\mpia}{Max-Planck-Institut f\"ur Astronomie,
 %                    K\"onigstuhl 17, D-69117 Heidelberg, Germany}
 
@@ -129,19 +130,77 @@ the population of surviving clusters with that observed around the Milky Way.
 % For each case, we add clusters until we find the initial number of GCs that are
 % required to produce the ones that survive until present day.
 
+\subsection{Milky Way mass model} \label{sec:massmodel}
+
 For the gravitational potential of the Milky Way, we use a multi-component
 mass-model consisting of a spherical Navarro-Frenk-White (NFW) dark matter halo
 (\citealt{Navarro:1996}), a Miyamoto-Nagai disk (\citealt{Miyamoto:1975}), and a
-mixture of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model the
-mass distribution in the central Galaxy (the detailed shape of the bulge and
-nuclear potential should not impact the orbits of the halo clusters we are
-interested in):
+sum of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model the mass
+distribution in the central Galaxy (bulge + nucleus, though, the detailed shape
+of the nuclear potential should not impact the orbits of the halo clusters we
+are interested in):
 \begin{eqnarray}
-  \Phi_{\rm Halo} &=& \frac{G \, M_{\rm H}}{r_{\rm H}}
+  \Phi_{\rm Halo} &=& \frac{G \, M_{\rm H}}{r_{\rm H}}STUFF
   \\
-  \Phi_{\rm Disk} &=& -\frac{G \, M_{\rm D}}
+  \Phi_{\rm Disk} &=& -\frac{G \, M_{\rm D}}{STUFF}
+  \\
+  \Phi_{\rm Bulge} &=& -\frac{G \, M_{\rm B}}{r + r_{\rm B}}
+  \\
+  \Phi_{\rm Nucleus} &=& -\frac{G \, M_{\rm N}}{r + r_{\rm N}} \quad .
 \end{eqnarray}
+This is a relatively simple model for the Milky Way potential, however at the
+radii that we are most interested (i.e. in the halo) it is a reasonable model
+given the vast uncertainties in the shape and profile of the halo.
+We fix the Bulge and Disk parameters following \citealt{Bovy:2014}.
+We fit for the halo mass, halo scale radius, nucleus mass, and nucleus scale
+radius using standard nonlinear least-squares fitting to a compilation of
+Milky Way enclosed-mass measurements (see \citealt{Gnedin??}).
+The parameter values are given in \tblname~\ref{tbl:potential-params}; in
+\figname~\ref{fig:mass-profile}, we plot the mass enclosed as a function of
+radii (blue line) and the data used to fit for the free parameters (black
+points).
 
+\begin{floattable}
+\begin{deluxetable}{r l}
+\tabletypesize{\footnotesize}
+\caption{Distributions of physical parameters for transit simulations
+\label{tbl:potential-params}}
+
+\tablehead{%
+    \colhead{name} & \colhead{value}
+}
+\startdata
+$M_{\rm H}$ & $5.73 \times 10^{11}~\msun$ \\
+$r_{\rm H}$ & $15.6~\kpc$ \\
+\hline
+$M_{\rm D}$ & $6.8 \times 10^{10}~\msun$ \\
+$r_{\rm D}$ & $3~\kpc$ \\
+$z_{\rm D}$ & $280~\pc$ \\
+\hline
+$M_{\rm B}$ & $5 \times 10^{9}~\msun$ \\
+$r_{\rm B}$ & $1~\kpc$ \\
+\hline
+$M_{\rm N}$ & $1.98 \times 10^{9}~\msun$ \\
+$r_{\rm N}$ & $79~\pc$ \\
+\enddata
+
+\end{deluxetable}
+\end{floattable}
+
+\begin{figure*}[p]
+\begin{center}
+\includegraphics[width=\textwidth]{figures/mass-profile.pdf}
+\end{center}
+\caption{%
+\todo{caption}
+\todo{Add second panel showing circular velocity curve with data from Andreas.}
+\todo{What's going on at small radii? Bug in Gala?}
+\label{fig:mass-profile}}
+\end{figure*}
+
+\subsection{Globular cluster initial mass distribution} \label{sec:gcmassdist}
+
+\subsection{Globular cluster mass evolution} \label{sec:gcmassevolution}
 
 In all cases, we solve for the mass evolution of the clusters using the
 prescription used in \citet{Gnedin:2014}.
@@ -154,6 +213,12 @@ the Milky Way instead.
 When generating mock stellar streams for the GCs, we only consider stars that
 are disrupted after the GC is stripped from its parent.
 
+\section{Cosmological subhalo orbits} \label{sec:aqorbits}
+
+\section{Results}
+
+\subsection{}
+
 \section{Conclusions}\label{sec:conclusions}
 
 \acknowledgements
@@ -164,7 +229,7 @@ Astropy, a community-developed core Python package for Astronomy
 % \citep[XSEDE;][]{Towns:2014}, which is supported by National Science Foundation
 % grant number ACI-1053575.
 
-\bibliographystyle{apj}
-\bibliography{refs}
+\bibliographystyle{aasjournal}
+\bibliography{mwgcs}
 
 \end{document}
