@@ -103,34 +103,44 @@ Galactocentric radii between $XX < r < YY~\kpc$ that were likely accreted from
 tidally-disrupted satellite galaxies;
 the mass and spherically-averaged density distribution of the known GCs is shown
 in \figname~\ref{xx}.
-Our goal is to reproduce these properties of the present-day GC population with
-different models for the initial globular cluster population.
-We consider three qualitatively different initial conditions, broadly outlined
-as:
+Some number of GCs have also been destroyed by a combination of the tidal field
+of the Galaxy and internal relaxation processes.
+Our goal is to reproduce the properties of the present-day GC population with
+different models for the initial GC population, varying the total mass in GCs
+(the initial number, at fixed mass distribution) and the dynamical origins of
+the clusters.
+We consider three qualitatively different scenarios, broadly outlined as:
 \begin{enumerate}
   \item The globular cluster system is in place at redshift $z=3$ with orbits
-    drawn from a spherical, isotropic distribution function (\acronym{DF}).
+    drawn from a spherical, isotropic distribution function (\acronym{DF}) and
+    evolves to present day.
   \item GCs are accreted with a constant accretion rate from redshift $z=3$ to
     present with a spherical, isotropic \acronym{DF}.
   \item GCs are accreted cosmologically from tidally-disrupted satellite
-    galaxies with a given mean specific frequency of globular clusters, $S_N$.
+    galaxies.
 \end{enumerate}
-With a mass model for the Milky Way, an initial mass function for the cluster
-masses, and orbital initial conditions for the GCs from the above cases, we can
-evolve a given GC population forward to present day and compare the population
-of surviving clusters with that observed around the Milky Way.
-For each case, we add clusters until we find the initial number of GCs that are
-required to produce the ones that survive until present day.
+For scenario 3, we use orbits of subhalos drawn from the Aquarius simulations
+(\citealt{aquarius}) and set the number of GCs in each satellite using a $M_{\rm
+halo}$-$M_{\rm GC}$ scaling relation (\citealt{Harris:2015}).
+With orbital initial conditions for the GCs (from the three scenarios above), a
+mass model for the Milky Way, and an initial mass function for the cluster
+masses we can evolve a given GC population forward to present day and compare
+the population of surviving clusters with that observed around the Milky Way.
+% For each case, we add clusters until we find the initial number of GCs that are
+% required to produce the ones that survive until present day.
 
 For the gravitational potential of the Milky Way, we use a multi-component
 mass-model consisting of a spherical Navarro-Frenk-White (NFW) dark matter halo
 (\citealt{Navarro:1996}), a Miyamoto-Nagai disk (\citealt{Miyamoto:1975}), and a
 mixture of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model the
-mass distribution in the central Galaxy:
-\begin{align}
-
-\end{align}
-
+mass distribution in the central Galaxy (the detailed shape of the bulge and
+nuclear potential should not impact the orbits of the halo clusters we are
+interested in):
+\begin{eqnarray}
+  \Phi_{\rm Halo} &=& \frac{G \, M_{\rm H}}{r_{\rm H}}
+  \\
+  \Phi_{\rm Disk} &=& -\frac{G \, M_{\rm D}}
+\end{eqnarray}
 
 
 In all cases, we solve for the mass evolution of the clusters using the
