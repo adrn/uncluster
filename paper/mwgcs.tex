@@ -134,37 +134,49 @@ the population of surviving clusters with that observed around the Milky Way.
 
 For the gravitational potential of the Milky Way, we use a multi-component
 mass-model consisting of a spherical Navarro-Frenk-White (NFW) dark matter halo
-(\citealt{Navarro:1996}), a Miyamoto-Nagai disk (\citealt{Miyamoto:1975}), and a
-sum of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model the mass
-distribution in the central Galaxy (bulge + nucleus, though, the detailed shape
-of the nuclear potential should not impact the orbits of the halo clusters we
-are interested in) \todo{Check NFW}:
+(H; \citealt{Navarro:1996}), a Miyamoto-Nagai disk (D; \citealt{Miyamoto:1975}),
+and a sum of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model
+the mass distribution in the central Galaxy (bulge, B, and nucleus, N).
+The detailed shape of the central mass distribution should not impact the orbits
+of the halo clusters we are interested in.
+The gravitational potential forms for these components are:
 \begin{eqnarray}
-  \Phi_{\rm Halo} &=& \frac{G \, M_{\rm H}}{r_{\rm H}} \, \frac{\ln{(1+r/r_{\rm H})}}{r/r_{\rm H}}
+  \Phi_{\rm H} &=& \frac{G \, M_{\rm H}}{r_{\rm H}} \, \frac{\ln{(1+r/r_{\rm H})}}{r/r_{\rm H}}
   \\
-  \Phi_{\rm Disk} &=& -\frac{G \, M_{\rm D}}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}
+  \Phi_{\rm D} &=& -\frac{G \, M_{\rm D}}{\sqrt{R^2 + (R_{\rm D} + \sqrt{z^2 + z_{\rm D}^2})^2}}
   \\
-  \Phi_{\rm Bulge} &=& -\frac{G \, M_{\rm B}}{r + r_{\rm B}}
+  \Phi_{\rm B} &=& -\frac{G \, M_{\rm B}}{r + r_{\rm B}}
   \\
-  \Phi_{\rm Nucleus} &=& -\frac{G \, M_{\rm N}}{r + r_{\rm N}} \quad .
+  \Phi_{\rm N} &=& -\frac{G \, M_{\rm N}}{r + r_{\rm N}} \quad .
 \end{eqnarray}
 This is a relatively simple model for the Milky Way potential, however at the
 radii that we are most interested (i.e. in the halo) it is a reasonable model
 given the vast uncertainties in the shape and profile of the halo.
-We fix the Bulge and Disk parameters following \citealt{Bovy:2014}.
+
+At present-day ($z=0$), we set the potential parameters as follows.
+We fix the Bulge and Disk parameters following \citealt{Bovy:2015}.
 We fit for the halo mass, halo scale radius, nucleus mass, and nucleus scale
-radius using standard nonlinear least-squares fitting to a compilation of
-Milky Way enclosed-mass measurements (see \citealt{Gnedin??}).
-The best-fit parameter values are given in \tblname~\ref{tbl:potential-params};
+radius using standard nonlinear least-squares fitting with a compilation of
+Milky Way enclosed-mass measurements (\citealt{Koposov:2010,Deason:2012,
+Deason:2012a,Gibbons:2014,Kupper:2015,MORETODO}).
+The best-fit or adopted parameter values are given in
+\tblname~\ref{tbl:potential-params};
 in \figname~\ref{fig:mass-profile}, we plot the mass enclosed as a function of
 radii (thick line) and the enclosed-mass measurements used to fit for the free
 potential parameters (points and error bars).
+To evaluate the potential at a past time, we fix the forms of the potential and
+scale the masses of each component with the following functions:
+\begin{eqnarray}
+  M_{\rm H}(z) &=& M_{\rm H}(0) \, WHAT
+  \\
+  M_{\rm D, B, N}(z) &=& M_{\rm D, B, N}(0) \, WHAT \quad .
+\end{eqnarray}
 
 \begin{floattable}
 \begin{deluxetable}{r l}
 \tabletypesize{\footnotesize}
-\caption{Distributions of physical parameters for transit simulations
-\label{tbl:potential-params}}
+\caption{Parameters for the adopted Milky Way gravitational potential model at
+present day ($z=0$) \label{tbl:potential-params}}
 
 \tablehead{%
     \colhead{name} & \colhead{value}
@@ -174,7 +186,7 @@ $M_{\rm H}$ & $4.51 \times 10^{11}~\msun$ \\
 $r_{\rm H}$ & $13.2~\kpc$ \\
 \hline
 $M_{\rm D}$ & $6.8 \times 10^{10}~\msun$ \\
-$r_{\rm D}$ & $3~\kpc$ \\
+$R_{\rm D}$ & $3~\kpc$ \\
 $z_{\rm D}$ & $280~\pc$ \\
 \hline
 $M_{\rm B}$ & $5 \times 10^{9}~\msun$ \\
@@ -199,15 +211,29 @@ $r_{\rm N}$ & $67.9~\pc$ \\
 
 \subsection{Globular cluster initial mass distribution} \label{sec:gcmassdist}
 
-Following previous work, we assume a truncated power-law initial mass
-distribution for the globular clusters (\citealt{Gnedin:2014}).
-In detail, we assume that the cluster masses are drawn from a mass distribution
-
+Following previous work, we assume a power-law initial mass distribution for the
+globular clusters (\citealt{Gnedin:2014}).
+In detail, we assume that the initial cluster masses $m_0$ are drawn from the
+distribution
+\begin{eqnarray}
+  p(M_0) = A \, M_0^{-2}, \quad M_{\rm min} < M_0 < M_{\rm max},
+\end{eqnarray}
+where $M_{\rm min} = 10^4~\msun$, $M_{\rm max} = 10^7~\msun$, and $A$ is the
+normalization constant.
+The power-law exponent ($\beta = 2$) is consistent with observed young massive
+star clusters in nearby galaxies (\citealt{TODO}).
+The minimum mass scale is somewhat arbitrary, but we expect lower mass clusters
+to disrupt very early and probably before they are tidally stripped from their
+host systems.
+The maximum mass scale is fixed to the fiducial value used in
+\citealt{Gnedin:2014}.
 
 \subsection{Globular cluster mass evolution} \label{sec:gcmassevolution}
 
-In all cases, we solve for the mass evolution of the clusters using the
-prescription used in \citet{Gnedin:2014}.
+We solve for the mass evolution of the clusters using a prescription similar to
+that described in \citet{Gnedin:2014}, but ignoring the effect of stellar mass
+loss.
+We solve for the mass and mean-radius evolution of a given cluster [...]
 
 For cases where a GC is accreted from a satellite galaxy, we first solve for
 the mass-loss of the cluster within the satellite system up until it passes the
