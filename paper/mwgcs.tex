@@ -138,11 +138,11 @@ mass-model consisting of a spherical Navarro-Frenk-White (NFW) dark matter halo
 sum of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model the mass
 distribution in the central Galaxy (bulge + nucleus, though, the detailed shape
 of the nuclear potential should not impact the orbits of the halo clusters we
-are interested in):
+are interested in) \todo{Check NFW}:
 \begin{eqnarray}
-  \Phi_{\rm Halo} &=& \frac{G \, M_{\rm H}}{r_{\rm H}}STUFF
+  \Phi_{\rm Halo} &=& \frac{G \, M_{\rm H}}{r_{\rm H}} \, \frac{\ln{(1+r/r_{\rm H})}}{r/r_{\rm H}}
   \\
-  \Phi_{\rm Disk} &=& -\frac{G \, M_{\rm D}}{STUFF}
+  \Phi_{\rm Disk} &=& -\frac{G \, M_{\rm D}}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}
   \\
   \Phi_{\rm Bulge} &=& -\frac{G \, M_{\rm B}}{r + r_{\rm B}}
   \\
