@@ -155,10 +155,10 @@ We fix the Bulge and Disk parameters following \citealt{Bovy:2014}.
 We fit for the halo mass, halo scale radius, nucleus mass, and nucleus scale
 radius using standard nonlinear least-squares fitting to a compilation of
 Milky Way enclosed-mass measurements (see \citealt{Gnedin??}).
-The parameter values are given in \tblname~\ref{tbl:potential-params}; in
-\figname~\ref{fig:mass-profile}, we plot the mass enclosed as a function of
-radii (blue line) and the data used to fit for the free parameters (black
-points).
+The best-fit parameter values are given in \tblname~\ref{tbl:potential-params};
+in \figname~\ref{fig:mass-profile}, we plot the mass enclosed as a function of
+radii (thick line) and the enclosed-mass measurements used to fit for the free
+potential parameters (points and error bars).
 
 \begin{floattable}
 \begin{deluxetable}{r l}
@@ -170,8 +170,8 @@ points).
     \colhead{name} & \colhead{value}
 }
 \startdata
-$M_{\rm H}$ & $5.73 \times 10^{11}~\msun$ \\
-$r_{\rm H}$ & $15.6~\kpc$ \\
+$M_{\rm H}$ & $4.51 \times 10^{11}~\msun$ \\
+$r_{\rm H}$ & $13.2~\kpc$ \\
 \hline
 $M_{\rm D}$ & $6.8 \times 10^{10}~\msun$ \\
 $r_{\rm D}$ & $3~\kpc$ \\
@@ -180,8 +180,8 @@ $z_{\rm D}$ & $280~\pc$ \\
 $M_{\rm B}$ & $5 \times 10^{9}~\msun$ \\
 $r_{\rm B}$ & $1~\kpc$ \\
 \hline
-$M_{\rm N}$ & $1.98 \times 10^{9}~\msun$ \\
-$r_{\rm N}$ & $79~\pc$ \\
+$M_{\rm N}$ & $1.76 \times 10^{9}~\msun$ \\
+$r_{\rm N}$ & $67.9~\pc$ \\
 \enddata
 
 \end{deluxetable}
@@ -193,12 +193,16 @@ $r_{\rm N}$ & $79~\pc$ \\
 \end{center}
 \caption{%
 \todo{caption}
-\todo{Add second panel showing circular velocity curve with data from Andreas.}
 \todo{What's going on at small radii? Bug in Gala?}
 \label{fig:mass-profile}}
 \end{figure*}
 
 \subsection{Globular cluster initial mass distribution} \label{sec:gcmassdist}
+
+Following previous work, we assume a truncated power-law initial mass
+distribution for the globular clusters (\citealt{Gnedin:2014}).
+In detail, we assume that the cluster masses are drawn from a mass distribution
+
 
 \subsection{Globular cluster mass evolution} \label{sec:gcmassevolution}
 
