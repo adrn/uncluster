@@ -6,7 +6,8 @@
 
 \begin{document}
 
-\title{The stellar halo of the Milky Way and globular cluster debris I: predictions for kinematic structure}
+\title{Globular cluster destruction in the Milky Way halo I:
+predictions for the number of thin stellar streams}
 \author{Adrian~M.~Price-Whelan\altaffilmark{\pu,\adrn},
         Oleg Gnedin\altaffilmark{\umich}
 %        Kathryn V. Johnston\altaffilmark{\colum}
@@ -93,42 +94,53 @@ in agreement with the number of thin streams discovered thus far.
 
 \section{Introduction}\label{sec:introduction}
 
-with 10000 GCs, surface brightness fluctuations at z=2?!
+Comment on: surface brightness fluctuations at z=2, assuming 10000 GCs
 
-Explain GC population of MW,
+Explain bimodal GC population of MW
 
 \section{Methods}\label{sec:methods}
 
-The Milky Way hosts at least XX metal-poor globular clusters (GCs) at
+The Milky Way hosts $\gtrsim$ 100 metal-poor globular clusters (GCs) at
 Galactocentric radii between $XX < r < YY~\kpc$ that were likely accreted from
-tidally-disrupted satellite galaxies;
-the mass and spherically-averaged density distribution of the known GCs is shown
-in \figname~\ref{xx}.
-Some number of GCs have also been destroyed by a combination of the tidal field
-of the Galaxy and internal relaxation processes.
+tidally-disrupted satellite galaxies.
+The mass distribution and Galactic, spherically-averaged space-density
+distribution of all known GCs with ${\rm [Fe/H]} < YY$ is shown in
+\figname~\ref{xx}.
+It is expected that the initial population of GCs around the Milky Way was
+initially much more numerous but that some number of GCs have been destroyed by
+a combination of the tidal field of the Galaxy and internal relaxation
+processes (see, e.g., \citealt{Gnedin:1999}).
 Our goal is to reproduce the properties of the present-day GC population with
 different models for the initial GC population, varying the total mass in GCs
-(the initial number, at fixed mass distribution) and the dynamical origins of
-the clusters.
+and the dynamical origins of the clusters.
+As shown in subsequent sections, these different models for the initial
+population of GCs lead to vastly different predictions for the amount of
+kinematic substructure in the Galactic halo, the number of thin stellar streams,
+and the total amount of stellar mass contributed to the stellar halo from
+disrupted GCs.
+
 We consider three qualitatively different scenarios, broadly outlined as:
 \begin{enumerate}
-  \item The globular cluster system is in place at redshift $z=3$ with orbits
-    drawn from a spherical, isotropic distribution function (\acronym{DF}) and
-    evolves to present day.
+  \item The globular cluster system is in place around the Milky Way at redshift
+    $z=3$ with orbits drawn from a spherical, isotropic distribution function
+    (\acronym{DF}) and evolves to present day.
   \item GCs are accreted with a constant accretion rate from redshift $z=3$ to
-    present with a spherical, isotropic \acronym{DF}.
-  \item GCs are accreted cosmologically from tidally-disrupted satellite
-    galaxies.
+    present with orbits drawn from a spherical, isotropic \acronym{DF}.
+  \item GCs are accreted tidally-disrupted satellite galaxies with orbits drawn
+    from subhalo orbits in a cosmological simulation.
 \end{enumerate}
-For scenario 3, we use orbits of subhalos drawn from the Aquarius simulations
-(\citealt{aquarius}) and set the number of GCs in each satellite using a $M_{\rm
-halo}$-$M_{\rm GC}$ scaling relation (\citealt{Harris:2015}).
-With orbital initial conditions for the GCs (from the three scenarios above), a
-mass model for the Milky Way, and an initial mass function for the cluster
-masses we can evolve a given GC population forward to present day and compare
-the population of surviving clusters with that observed around the Milky Way.
-% For each case, we add clusters until we find the initial number of GCs that are
-% required to produce the ones that survive until present day.
+For each case, we add clusters (or subhalos) until the number of surviving
+clusters is consistent with the observed number of GCs around the Milky Way.
+In the subsections that follow, we describe the methods we use to simulate these
+different scenarios.
+
+% For scenario 3, we use orbits of subhalos drawn from the Aquarius simulations
+% (\citealt{aquarius}) and set the number of GCs in each satellite using a $M_{\rm
+% halo}$-$M_{\rm GC}$ scaling relation (\citealt{Harris:2015}). \todo{What?}
+% With orbital initial conditions for the GCs (from the three scenarios above), a
+% mass model for the Milky Way, and an initial mass function for the cluster
+% masses we can evolve a given GC population forward to present day and compare
+% the population of surviving clusters with that observed around the Milky Way.
 
 \subsection{Milky Way mass model} \label{sec:massmodel}
 
@@ -241,16 +253,72 @@ host systems.
 The maximum mass scale is fixed to the fiducial value used in
 \citealt{Gnedin:2014}.
 
-\subsection{Globular cluster mass evolution} \label{sec:gcmassevolution}
+\subsection{Cluster orbits} \label{sec:aqorbits}
 
-We solve for the mass evolution of the clusters using a prescription similar to
-that described in \citet{Gnedin:2014}, but ignoring the effect of stellar mass
-loss.
-This simple model for cluster mass loss accounts for tidal stripping and
-evaporation, but ignores gravitational shocking of clusters on eccentric orbits:
-The cluster is assumed to be on a circular orbit at the mean orbital radius
-along its orbit with simple corrections applied to account for the orbital
-eccentricity (see, e.g., \eqname s~XX in \citealt{Gnedin:2014}).
+\todo{suh}
+
+\subsection{Evolution of stripped stars} \label{sec:mockstreams}
+
+Our goal is to produce mock stellar halos of stellar debris lost from the
+globular clusters as they evolve along their orbits within the Milky Way.
+All of the stars stripped from a given cluster will initially remain close to
+the cluster and form coherent tidal tails, but older tidal debris will phase-mix
+and form a smoother background distribution (e.g., \citealt{Helmi:1999}).
+Our approach is to generate simulated stellar streams without running full
+$N$-body simulations by using an approximate method for populating the tidal
+tails that form around each cluster.
+In recent years, significant effort has been devoted to developing such methods
+to generate model stellar streams to compare with observed stream star
+kinematics for, e.g., measuring the gravitational field of the Milky Way
+(\citealt{Kupper:2012,Bonaca:2014,Gibbons:2014,Bovy:2014,Fardal:2015}).
+These methods operate in a similar way:
+Given the orbit and mass evolution of a progenitor system (e.g., globular
+cluster), star particles are released from the Lagrange points of the satellite
+with a spread in position and velocity set by the mass of the satellite (e.g.,
+\citealt{Johnston:1999}) and some tunable scale parameters.
+In this work, we use the parametrization of \citealt{Fardal:2015}, who fit the
+release distribution parameters by comparing to full $N$-body simulations across
+a range of mass and orbital parameters.
+
+These methods accurately reproduce the mean tracks of the streams that form, but
+the density of stars along the streams is determined by the mass-loss from the
+progenitor system.
+The mass evolution is typically assumed to be approximately linear with time so
+that equal-mass star particles can be released from the Lagrange points at
+regular time intervals (e.g., in sync with the integration of the progenitor
+orbit).
+In this work, we initially populate the stream particles using a constant
+mass-loss rate, but separately solve for the cluster mass evolution to compute
+the instantaneous mass-loss rate from the cluster at every time.
+We then use this mass-loss rate to weight the model stream particle masses
+to better capture the true density structure along each stream.
+
+\subsection{Cluster mass evolution} \label{sec:gcmassevolution}
+
+We solve for the mass evolution of a cluster given its initial mass and full
+orbit using a semi-analytical method similar to that described in
+\citet{Gnedin:2014} (hereafter G14).
+G14 simultaneously solve for the mass and mean-radius evolution of ensembles
+of globular clusters using analytic prescriptions for cluster mass-loss due to
+evaporation ($t_{\rm iso}$), tidal stripping ($t_{\rm tid}$), and stellar
+evolution ($t_{\rm se}$) and orbital radius evolution from dynamical friction
+($t_{\rm df}$).
+As we are mainly interested in the halo globular clusters, in this work we
+neglect dynamical friction---the dynamical friction timescale for our maximum
+mass cluster ($10^7~\msun$) at a Galactocentric distance of 10 kpc is much
+longer than a Hubble time even for a moderately eccentric orbit.
+We use these timescales (see also \eqname s~3--8 in \citealt{Gnedin:2014}) to
+numerically integrate a simple differential equation for cluster mass $M$:
+\begin{eqnarray}
+  \frac{\dd M}{\dd t} &=& \, -\frac{M}{\min\left(t_{\rm iso}, t_{\rm tid}, t_{\rm se}\right)}
+\end{eqnarray}
+where the timescales are generally functions of both mass and mean orbital
+radius.
+This simple model for cluster mass evolution is approximate in many ways, but
+perhaps the most severe assumption is that it ignores gravitational shocking of
+clusters on eccentric orbits:
+Each cluster is assumed to be on a circular orbit at the mean orbital radius
+along its orbit.
 
 For cases when a GC is accreted from a satellite galaxy, we first solve for
 the mass-loss of the cluster within the satellite system up until it passes the
@@ -263,21 +331,19 @@ are disrupted after the GC is stripped from its parent.
 This simple procedure is only used to determine the mass-loss history of a given
 cluster.
 
-\section{Cosmological subhalo orbits} \label{sec:aqorbits}
-
 \section{Results}
 
 \subsection{}
 
-\section{Conclusions}\label{sec:conclusions}
+\section{Discussion}\label{sec:discussion}
+
+We assume cluster formation in dwarf galaxies is same as massive galaxies today
+and that not redshift-dependent
 
 \acknowledgements
 This research made use of
 Astropy, a community-developed core Python package for Astronomy
 \citep{Astropy-Collaboration:2013}.
-% This work used the Extreme Science and Engineering Discovery Environment
-% \citep[XSEDE;][]{Towns:2014}, which is supported by National Science Foundation
-% grant number ACI-1053575.
 
 \bibliographystyle{aasjournal}
 \bibliography{mwgcs}
