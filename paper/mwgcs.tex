@@ -164,13 +164,26 @@ The best-fit or adopted parameter values are given in
 in \figname~\ref{fig:mass-profile}, we plot the mass enclosed as a function of
 radii (thick line) and the enclosed-mass measurements used to fit for the free
 potential parameters (points and error bars).
-To evaluate the potential at a past time, we fix the forms of the potential and
-scale the masses of each component with the following functions:
+
+\todo{possibly relevant paper: https://arxiv.org/pdf/astro-ph/0505594v3.pdf}
+To evaluate the potential at a past time, we fix the form of the potential but
+assume that the mass of the halo decreases exponentially with increasing
+redshift (\citealt{TODO}), the mass of the combined disk, bulge, and nucleus
+decreases linearly with lookback time (\citealt{TODO}), and the scale lengths of
+the disk decrease \todo{how?} (\citealt{TODO}).
+These assumed scalings...\todo{explain why}:
 \begin{eqnarray}
-  M_{\rm H}(z) &=& M_{\rm H}(0) \, WHAT
+  M_{\rm H}(z) &=& M_{\rm H}(0) \, e^{-z}
   \\
-  M_{\rm D, B, N}(z) &=& M_{\rm D, B, N}(0) \, WHAT \quad .
+  M_{\rm D, B, N}(t) &=& M_{\rm D, B, N}(0) \, + \eta\,t
+  \\
+  R_{\rm D} &=& ...
+  \\
+  z_{\rm D} &=& ...
+  \quad ,
 \end{eqnarray}
+where $t=0$ is present day and we evolve the clusters starting at $t_0 =
+-XX~{\rm Gyr}$, $z_0 = 3$.
 
 \begin{floattable}
 \begin{deluxetable}{r l}
@@ -211,8 +224,8 @@ $r_{\rm N}$ & $67.9~\pc$ \\
 
 \subsection{Globular cluster initial mass distribution} \label{sec:gcmassdist}
 
-Following previous work, we assume a power-law initial mass distribution for the
-globular clusters (\citealt{Gnedin:2014}).
+We assume a power-law initial mass distribution for the globular clusters
+(e.g., \citealt{Gnedin:2014}).
 In detail, we assume that the initial cluster masses $m_0$ are drawn from the
 distribution
 \begin{eqnarray}
@@ -233,15 +246,22 @@ The maximum mass scale is fixed to the fiducial value used in
 We solve for the mass evolution of the clusters using a prescription similar to
 that described in \citet{Gnedin:2014}, but ignoring the effect of stellar mass
 loss.
-We solve for the mass and mean-radius evolution of a given cluster [...]
+This simple model for cluster mass loss accounts for tidal stripping and
+evaporation, but ignores gravitational shocking of clusters on eccentric orbits:
+The cluster is assumed to be on a circular orbit at the mean orbital radius
+along its orbit with simple corrections applied to account for the orbital
+eccentricity (see, e.g., \eqname s~XX in \citealt{Gnedin:2014}).
 
-For cases where a GC is accreted from a satellite galaxy, we first solve for
+For cases when a GC is accreted from a satellite galaxy, we first solve for
 the mass-loss of the cluster within the satellite system up until it passes the
 tidal radius.
 At this point, we begin evolving the mass of the cluster in the tidal field of
 the Milky Way instead.
 When generating mock stellar streams for the GCs, we only consider stars that
 are disrupted after the GC is stripped from its parent.
+
+This simple procedure is only used to determine the mass-loss history of a given
+cluster.
 
 \section{Cosmological subhalo orbits} \label{sec:aqorbits}
 
