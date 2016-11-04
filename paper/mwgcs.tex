@@ -8,8 +8,8 @@
 
 \title{Globular cluster destruction in the Milky Way halo I:
 predictions for the number of thin stellar streams}
-\author{Adrian~M.~Price-Whelan\altaffilmark{\pu,\adrn},
-        Oleg Gnedin\altaffilmark{\umich}
+\author{Adrian~M.~Price-Whelan\altaffilmark{\pu,\adrn} +++
+%        Oleg Gnedin\altaffilmark{\umich}
 %        Kathryn V. Johnston\altaffilmark{\colum}
 %        David N. Spergel\altaffilmark{\cca,\pu}
 %       Hans-Walter~Rix\altaffilmark{\mpia}
@@ -18,7 +18,7 @@ predictions for the number of thin stellar streams}
 % Affiliations
 \newcommand{\pu}{1}
 \newcommand{\adrn}{2}
-\newcommand{\umich}{3}
+% \newcommand{\umich}{3}
 % \newcommand{\colum}{4}
 % \newcommand{\cca}{5}
 %\newcommand{\mpia}{6}
@@ -29,9 +29,9 @@ predictions for the number of thin stellar streams}
                      \texttt{adrn@princeton.edu}}
 
 % TODO: michigan
-\altaffiltext{\umich}{Department of Astronomy ??,
-                      University of Michigan,
-                      USA}
+% \altaffiltext{\umich}{Department of Astronomy ??,
+%                       University of Michigan,
+%                       USA}
 % \altaffiltext{\colum}{Department of Astronomy,
 %                       Columbia University,
 %                       550 W 120th St.,
@@ -102,16 +102,16 @@ Ignore MW / metal rich pop because likely formed in close proximity to the disk
 
 \section{Methods}\label{sec:methods}
 
-The Milky Way hosts $\gtrsim$ 100 metal-poor globular clusters (GCs) at
-Galactocentric radii between $XX < r < YY~\kpc$ that were likely accreted from
+The Milky Way hosts $\approx$100 metal-poor globular clusters (GCs) at
+Galactocentric radii between $1 < r < 125~\kpc$ that were likely accreted from
 tidally-disrupted satellite galaxies.
 The mass distribution and Galactic, spherically-averaged space-density
-distribution of all known GCs with ${\rm [Fe/H]} < YY$ is shown in
-\figname~\ref{xx}.
-It is expected that the initial population of GCs around the Milky Way was
-initially much more numerous but that some number of GCs have been destroyed by
-a combination of the tidal field of the Galaxy and internal relaxation
-processes (see, e.g., \citealt{Gnedin:1999}).
+distribution of all known GCs with ${\rm [Fe/H]} < -1$ is shown in
+\figname~\ref{fig:mw-gc-pop}.
+It is expected that the initial population of GCs around the Milky Way was much
+more numerous but that some number of GCs have been destroyed by a combination
+of the tidal field of the Galaxy and internal relaxation processes (see, e.g.,
+\citealt{Gnedin:1997}).
 Our goal is to reproduce the properties of the present-day GC population with
 different models for the initial GC population, varying the total mass in GCs
 and the dynamical origins of the clusters.
@@ -121,20 +121,28 @@ kinematic substructure in the Galactic halo, the number of thin stellar streams,
 and the total amount of stellar mass contributed to the stellar halo from
 disrupted GCs.
 
-We consider three qualitatively different scenarios, broadly outlined as:
+\begin{figure*}[h]
+\begin{center}
+\includegraphics[width=\textwidth]{figures/mass-gcdensity.pdf}
+\end{center}
+\caption{%
+\todo{caption}
+\label{fig:mw-gc-pop}}
+\end{figure*}
+
+We consider two qualitatively different scenarios:
 \begin{enumerate}
   \item The globular cluster system is in place around the Milky Way at redshift
-    $z=3$ with orbits drawn from a spherical, isotropic distribution function
-    (\acronym{DF}) and evolves to present day.
-  \item GCs are accreted with a constant accretion rate from redshift $z=3$ to
-    present with orbits drawn from a spherical, isotropic \acronym{DF}.
-  \item GCs are accreted tidally-disrupted satellite galaxies with orbits drawn
-    from subhalo orbits in a cosmological simulation.
+    $z=3$ and simply evolves to present day, and
+    % with orbits drawn from a spherical, isotropic distribution function (\df)
+  \item The globular clusters are deposited into the Milky Way from
+    cosmologically-accreted, tidally-disrupted satellite galaxies.
+    % with orbits drawn from subhalo orbits in a cosmological simulation.
 \end{enumerate}
-For each case, we add clusters (or subhalos) until the number of surviving
-clusters is consistent with the observed number of GCs around the Milky Way.
+For both cases, we require that the number and radial profile of surviving
+clusters is consistent with the observed metal-poor GCs around the Milky Way.
 In the subsections that follow, we describe the methods we use to simulate these
-different scenarios.
+two scenarios.
 
 % For scenario 3, we use orbits of subhalos drawn from the Aquarius simulations
 % (\citealt{aquarius}) and set the number of GCs in each satellite using a $M_{\rm
@@ -178,6 +186,16 @@ The best-fit or adopted parameter values are given in
 in \figname~\ref{fig:mass-profile}, we plot the mass enclosed as a function of
 radii (thick line) and the enclosed-mass measurements used to fit for the free
 potential parameters (points and error bars).
+
+\begin{figure*}[h]
+\begin{center}
+\includegraphics[width=0.65\textwidth]{figures/mass-profile.pdf}
+\end{center}
+\caption{%
+\todo{caption}
+\todo{What's going on at small radii? Bug in Gala?}
+\label{fig:mass-profile}}
+\end{figure*}
 
 \todo{possibly relevant paper: https://arxiv.org/pdf/astro-ph/0505594v3.pdf}
 To evaluate the potential at a past time, we fix the form of the potential but
@@ -226,22 +244,10 @@ $r_{\rm N}$ & $67.9~\pc$ \\
 \end{deluxetable}
 \end{floattable}
 
-\begin{figure*}[p]
-\begin{center}
-\includegraphics[width=\textwidth]{figures/mass-profile.pdf}
-\end{center}
-\caption{%
-\todo{caption}
-\todo{What's going on at small radii? Bug in Gala?}
-\label{fig:mass-profile}}
-\end{figure*}
-
 \subsection{Globular cluster initial mass distribution} \label{sec:gcmassdist}
 
-We assume a power-law initial mass distribution for the globular clusters
-(e.g., \citealt{Gnedin:2014}).
-In detail, we assume that the initial cluster masses $m_0$ are drawn from the
-distribution
+We assume that the initial cluster masses $m_0$ are drawn from a power-law
+mass distribution (e.g., \citealt{Gnedin:2014}):
 \begin{eqnarray}
   p(M_0) = A \, M_0^{-2}, \quad M_{\rm min} < M_0 < M_{\rm max},
 \end{eqnarray}
@@ -257,9 +263,41 @@ The maximum mass scale is fixed to the fiducial value used in
 
 \subsection{Cluster orbits} \label{sec:aqorbits}
 
-\todo{suh}
+The orbits of the individual clusters are either drawn from (1) a spherical,
+isotropic distribution function embedded in the (instantaneous) background Milky
+Way potential (\sectionname~\ref{sec:massmodel}) or (2) are assumed to be
+accreted cosmologically in satellites and deposited into the Milky Way once the
+satellites fully disrupt.
 
-\subsection{Evolution of stripped stars} \label{sec:mockstreams}
+\subsubsection{Case 1: Embedded spherical distribution function} \label{sec:sphdf}
+
+For this case, we follow previous work and assume the density profile of the
+initial globular cluster system follows a S\'ersic profile with effective radius
+$R_e=4$ and index $n_s = 2.2$ (see \sectionname~3 in \citealt{Gnedin:2014}).
+This choice comes from assuming that, if the globular cluster system were in
+place at an early time, the density profile of clusters, $\nu(r)$, likely
+follows that of the stars (which is approximately S\'ersic).
+We use this tracer density profile $\nu(r)$ and compute a spherically-averaged
+version of the Milky Way mass model to evaluate the relative potential
+$\Psi(r,t) = -\Phi(r,t)$ and use Eddington's formula
+(\citealt{Eddington:1916,Binney:2008}) to evaluate the \df, $f(\mathcal{E})$,
+along a grid of relative energies $\mathcal{E} = \Psi - \frac{1}{2}v^2$:
+\begin{eqnarray}
+  f(\mathcal{E}) &=& \frac{1}{\sqrt{8}\,\pi} \, \frac{\dd}{\dd \mathcal{E}}
+    \int_0^\mathcal{E} \, \frac{\dd \Psi}{\sqrt{\mathcal{E} - \Psi}} \,
+    \frac{\dd \nu}{\dd \Psi} \quad .
+\end{eqnarray}
+We use inverse-transform sampling to sample radii from the tracer density
+profile $\nu(r)$, then use rejection-sampling (\citealt{vonneumann}) to sample
+velocity magnitudes from the \df\ at each radius.
+We convert radius and velocity magnitude to full-space position and velocity
+assuming isotropy.
+
+\subsubsection{Case 2: Cosmological orbits from the Aquarius simulations} \label{sec:cosmoorbits}
+
+todo
+
+\subsection{Mass evolution of the clusters} \label{sec:mockstreams}
 
 Our goal is to produce mock stellar halos of stellar debris lost from the
 globular clusters as they evolve along their orbits within the Milky Way.
@@ -333,14 +371,35 @@ are disrupted after the GC is stripped from its parent.
 This simple procedure is only used to determine the mass-loss history of a given
 cluster.
 
-\section{Results}
+\section{Results 1: Coherent structures and thin streams}
 
-\subsection{}
+Number of streams, distribution of lengths, mass in coherent structures?
+
+\section{Results 2: Phase-mixed debris and kinematic substructure}
+
+Solar neighborhood, Gaia volume + uncertainties
 
 \section{Discussion}\label{sec:discussion}
 
-We assume cluster formation in dwarf galaxies is same as massive galaxies today
-and that not redshift-dependent
+Caveats:
+\begin{itemize}
+  \item Simple potential model - not cosmological, spherical halo, no
+    substructure, no bar!
+  \item Neglect stars deposited from dwarf galaxies - will dominate the stellar
+    halo. We are imagining being able to distinguish these from GC stars using
+    detailed abundances.
+\end{itemize}
+
+\section{Conclusions} \label{sec:conclusions}
+
+Number of thin streams more consistent with X...
+
+Compare kinematic clustering to chemical clustering to see how much chaos there
+is, how much potential has evolved since majority disrupted
+
+If similar, then amount of clumpiness tells you the initial population of GCs --
+star formation in early universe, globular cluster populations in dwarf
+galaxies, etc.
 
 \acknowledgements
 This research made use of
