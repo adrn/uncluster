@@ -6,8 +6,7 @@
 
 \begin{document}
 
-\title{Globular cluster destruction in the Milky Way halo I:
-predictions for the number of thin stellar streams}
+\title{Globular cluster destruction in the Milky Way halo I: ??}
 \author{Adrian~M.~Price-Whelan\altaffilmark{\pu,\adrn} +++
 %        Oleg Gnedin\altaffilmark{\umich}
 %        Kathryn V. Johnston\altaffilmark{\colum}
@@ -94,32 +93,35 @@ in agreement with the number of thin streams discovered thus far.
 
 \section{Introduction}\label{sec:introduction}
 
+\todo{Write the introduction!}
+
 Comment on: surface brightness fluctuations at z=2, assuming 10000 GCs
 
-Explain bimodal GC population of MW - population formed in MW vs. accreted.
+Bimodal GC population of MW - population formed in MW vs. accreted?
 
 Ignore MW / metal rich pop because likely formed in close proximity to the disk
 
 \section{Methods}\label{sec:methods}
 
-The Milky Way hosts $\approx$100 metal-poor globular clusters (GCs) at
-Galactocentric radii between $1 < r < 125~\kpc$ that were likely accreted from
-tidally-disrupted satellite galaxies.
-The mass distribution and Galactic, spherically-averaged space-density
-distribution of all known GCs with ${\rm [Fe/H]} < -1$ is shown in
-\figname~\ref{fig:mw-gc-pop}.
+The Milky Way hosts at least $\approx$160 globular clusters (GCs) between
+Galactocentric radii $1 \lesssim r \lesssim 125~\kpc$ with a total bound mass
+$M_{{\rm tot},z=0} \approx 4.5 \times 10^7~\msun$.
+The mass distribution and spherically-averaged number density of all known GCs
+is shown in \figname~\ref{fig:mw-gc-pop}.
 It is expected that the initial population of GCs around the Milky Way was much
 more numerous but that some number of GCs have been destroyed by a combination
 of the tidal field of the Galaxy and internal relaxation processes (see, e.g.,
 \citealt{Gnedin:1997}).
-Our goal is to reproduce the properties of the present-day GC population with
-different models for the initial GC population, varying the total mass in GCs
-and the dynamical origins of the clusters.
-As shown in subsequent sections, these different models for the initial
-population of GCs lead to vastly different predictions for the amount of
-kinematic substructure in the Galactic halo, the number of thin stellar streams,
-and the total amount of stellar mass contributed to the stellar halo from
-disrupted GCs.
+The number of initial clusters and total stellar mass from this disrupted
+population will depend strongly on the assembly history and evolution of the
+globular cluster system.
+Here, our goal is to broadly reproduce the properties of the present-day GC
+population with different models for the initial GC population, varying the
+dynamical origin of the clusters.
+As shown in subsequent sections, different models for the initial population of
+GCs lead to vastly different predictions for the amount of mass contributed to
+the stellar halo by disrupted GCs, the amount of kinematic substructure in the
+halo, and the number of thin stellar streams observable today.
 
 \begin{figure*}[h]
 \begin{center}
@@ -130,19 +132,24 @@ disrupted GCs.
 \label{fig:mw-gc-pop}}
 \end{figure*}
 
-We consider two qualitatively different scenarios:
+We consider two qualitatively different sets of scenarios:
 \begin{enumerate}
-  \item The globular cluster system is in place around the Milky Way at redshift
-    $z=3$ and simply evolves to present day, and
+  \item The globular cluster system is in place (whether accreted or formed
+    early on) around the Milky Way at redshift $z=3$ and evolves to present day.
     % with orbits drawn from a spherical, isotropic distribution function (\df)
   \item The globular clusters are deposited into the Milky Way from
     cosmologically-accreted, tidally-disrupted satellite galaxies.
     % with orbits drawn from subhalo orbits in a cosmological simulation.
 \end{enumerate}
-For both cases, we require that the number and radial profile of surviving
-clusters is consistent with the observed metal-poor GCs around the Milky Way.
-In the subsections that follow, we describe the methods we use to simulate these
-two scenarios.
+Within each of these broad scenarios, we vary the details as described in
+\sectionname~\ref{sec:TODO}.
+For each sub-scenario, we require that the number of surviving clusters is
+between 150--200 (\todo{arbitrary numbers!}) and that their mass distribution is
+qualitatively similar to that of the observed GCs around the Milky Way.
+In the subsections that follow we describe the methods we use to simulate the
+different scenarios.
+
+\todo{What cosmology do we use?}
 
 % For scenario 3, we use orbits of subhalos drawn from the Aquarius simulations
 % (\citealt{aquarius}) and set the number of GCs in each satellite using a $M_{\rm
@@ -159,9 +166,7 @@ mass-model consisting of a spherical Navarro-Frenk-White (NFW) dark matter halo
 (H; \citealt{Navarro:1996}), a Miyamoto-Nagai disk (D; \citealt{Miyamoto:1975}),
 and a sum of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model
 the mass distribution in the central Galaxy (bulge, B, and nucleus, N).
-The detailed shape of the central mass distribution should not impact the orbits
-of the halo clusters we are interested in.
-The gravitational potential forms for these components are:
+The gravitational potential expressions for these components are:
 \begin{eqnarray}
   \Phi_{\rm H} &=& \frac{G \, M_{\rm H}}{r_{\rm H}} \, \frac{\ln{(1+r/r_{\rm H})}}{r/r_{\rm H}}
   \\
@@ -171,20 +176,20 @@ The gravitational potential forms for these components are:
   \\
   \Phi_{\rm N} &=& -\frac{G \, M_{\rm N}}{r + r_{\rm N}} \quad .
 \end{eqnarray}
-This is a relatively simple model for the Milky Way potential, however at the
-radii that we are most interested (i.e. in the halo) it is a reasonable model
-given the vast uncertainties in the shape and profile of the halo.
+This is a relatively simple model for the Milky Way potential, but we see no
+justification for making the halo model more complex given the vast
+uncertainties in the shape and profile of the dark matter halo.
 
-At present-day ($z=0$), we set the potential parameters as follows.
+At present-day ($z=0$), we set the potential parameters as follows:
 We fix the Bulge and Disk parameters following \citealt{Bovy:2015}.
 We fit for the halo mass, halo scale radius, nucleus mass, and nucleus scale
 radius using standard nonlinear least-squares fitting with a compilation of
 Milky Way enclosed-mass measurements (\citealt{Koposov:2010,Deason:2012,
 Deason:2012a,Gibbons:2014,Kupper:2015,MORETODO}).
-The best-fit or adopted parameter values are given in
-\tblname~\ref{tbl:potential-params};
-in \figname~\ref{fig:mass-profile}, we plot the mass enclosed as a function of
-radii (thick line) and the enclosed-mass measurements used to fit for the free
+The best-fit or adopted parameter values for the $z=0$ potential are given in
+\tblname~\ref{tbl:potential-params}.
+In \figname~\ref{fig:mass-profile} we plot the mass enclosed as a function of
+radius (thick line) and the enclosed-mass measurements used to fit for the free
 potential parameters (points and error bars).
 
 \begin{figure*}[h]
@@ -197,25 +202,45 @@ potential parameters (points and error bars).
 \label{fig:mass-profile}}
 \end{figure*}
 
-\todo{possibly relevant paper: https://arxiv.org/pdf/astro-ph/0505594v3.pdf}
+% \todo{possibly relevant paper: https://arxiv.org/pdf/astro-ph/0505594v3.pdf}
 To evaluate the potential at a past time, we fix the form of the potential but
-assume that the mass of the halo decreases exponentially with increasing
-redshift (\citealt{TODO}), the mass of the combined disk, bulge, and nucleus
-decreases linearly with lookback time (\citealt{TODO}), and the scale lengths of
-the disk decrease \todo{how?} (\citealt{TODO}).
-These assumed scalings...\todo{explain why}:
+assume that the mass and scale radii of each component evolve.
+In detail, we assume that:
+the virial mass of the halo decreases approximately exponentially with
+increasing redshift and the virial radius is proportional to the cube-root of
+the virial mass times the scale factor $a$ (e.g.,
+\citealt{Krumholz:2012,Dekel:2006}), the mass of the combined disk, bulge, and
+nucleus decreases linearly with lookback time (e.g., \citealt{Leitner:2012}),
+and the scale lengths of the disk, bulge, and nucleus decrease in proportion to
+the virial radius (e.g., \citealt{Kravtsov:2013}).
+We assume that the dark matter scale radius is constant with redshift leading to
+halo concentration, $c = R_{\rm vir} / r_{\rm H}$, evolution similar to that
+seen in cosmological simulations (e.g., \citealt{Munoz-Cuartas:2011}).
+In terms of the virial quantities, the halo scale mass, $M_{\rm H}$, is given by
 \begin{eqnarray}
-  M_{\rm H}(z) &=& M_{\rm H}(0) \, e^{-z}
+  M_{\rm H} &=& \frac{M_{\rm vir}}{\ln(c+1) - c/(c+1)}
+\end{eqnarray}
+and only grows by a factor of $\approx$2.75 from $z=3$ to present, while the
+virial mass of the halo grows by a factor of $\approx$15 (as is roughly
+consistent with, e.g., \citealt{Cuesta:2008,Diemer:2013}).
+
+The expressions used to evolve the potential parameters are:
+\begin{eqnarray}
+  M_{\rm vir}(z) &=& M_{\rm vir}(0) \, e^{-0.9 \, z}
   \\
-  M_{\rm D, B, N}(t) &=& M_{\rm D, B, N}(0) \, + \eta\,t
+  r_{\rm vir}(z) &\approx& 34.3 \, \left(\frac{M_{\rm vir}}{10^{12}~\msun}\right)^{1/3} \,
+    \left(\frac{\Delta}{200}\right)^{-1/3} \, \left(\frac{\Omega_m}{0.3}\right)^{-1/3} \, \left(\frac{h}{0.7}\right)^{-2/3} \,
+    (1+z)^{-1} \, {\rm kpc}
   \\
-  R_{\rm D} &=& ...
+  M_{\rm D,B,N}(t) &=& M_{\rm D, B, N}(0) \, f_*(t)
   \\
-  z_{\rm D} &=& ...
+  R_{\rm D,B,N}(t) &=& R_{\rm D,B,N}(0) \, \frac{r_{\rm vir}(t)}{r_{\rm vir}(0)}
   \quad ,
 \end{eqnarray}
-where $t=0$ is present day and we evolve the clusters starting at $t_0 =
--XX~{\rm Gyr}$, $z_0 = 3$.
+where $t=0$, $z=0$ is present day and we evolve the clusters starting at $t_0 =
+-XX~{\rm Gyr}$, $z_0 = 3$, the form of $f_*(t)$ and parameters are taken from
+\citealt{Leitner:2012} (see Appendix, \eqname~A3), \todo{more stuff}.
+
 
 \begin{floattable}
 \begin{deluxetable}{r l}
@@ -388,6 +413,9 @@ Caveats:
   \item Neglect stars deposited from dwarf galaxies - will dominate the stellar
     halo. We are imagining being able to distinguish these from GC stars using
     detailed abundances.
+  \item Bimodality in metallicity distribution -- present population probably a
+    mixture of in situ and accreted. In situ probably had angular momentum, but
+    we ignore...
 \end{itemize}
 
 \section{Conclusions} \label{sec:conclusions}
