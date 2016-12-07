@@ -171,14 +171,17 @@ and a sum of spherical Hernquist profiles (\citealt{Hernquist:1990}) to model
 the mass distribution in the central Galaxy (bulge, B, and nucleus, N).
 The gravitational potential expressions for these components are:
 \begin{eqnarray}
-  \Phi_{\rm H} &=& \frac{G \, M_{\rm H}}{r_{\rm H}} \, \frac{\ln{(1+r/r_{\rm H})}}{r/r_{\rm H}}
+  \Phi_{\rm H}(r,t) &=& \frac{G \, M_{\rm H}(t)}{r_{\rm H}} \, \frac{\ln{(1+r/r_{\rm H})}}{r/r_{\rm H}}
   \\
-  \Phi_{\rm D} &=& -\frac{G \, M_{\rm D}}{\sqrt{R^2 + (R_{\rm D} + \sqrt{z^2 + z_{\rm D}^2})^2}}
+  \Phi_{\rm D}(R,z,t) &=& -\frac{G \, M_{\rm D}(t)}
+    {\sqrt{R^2 + \left(R_{\rm D}(t) + \sqrt{z^2 + z_{\rm D}^2}\right)^2}}
   \\
-  \Phi_{\rm B} &=& -\frac{G \, M_{\rm B}}{r + r_{\rm B}}
+  \Phi_{\rm B}(r,t) &=& -\frac{G \, M_{\rm B}(t)}{r + r_{\rm B}(t)}
   \\
-  \Phi_{\rm N} &=& -\frac{G \, M_{\rm N}}{r + r_{\rm N}} \quad .
+  \Phi_{\rm N}(r,t) &=& -\frac{G \, M_{\rm N}(t)}{r + r_{\rm N}(t)} \quad ,
 \end{eqnarray}
+where $r$ is the spherical radius and $R$ the cylindrical radius and
+the time-dependent parameters are noted.
 This is a relatively simple model for the Milky Way potential, but we see no
 justification for making the halo model more complex given the vast
 uncertainties in the shape and profile of the dark matter halo.
@@ -212,19 +215,23 @@ the virial mass of the halo decreases approximately exponentially with
 increasing redshift and the virial radius is proportional to the cube-root of
 the virial mass times the scale factor $a$ (e.g.,
 \citealt{Krumholz:2012,Dekel:2006}), the mass of the combined disk, bulge, and
-nucleus decreases linearly with lookback time (e.g., \citealt{Leitner:2012}),
-and the scale lengths of the disk, bulge, and nucleus decrease in proportion to
-the virial radius (e.g., \citealt{Kravtsov:2013}).
+nucleus decreases approximately linearly with lookback time (but in detail
+follows the prescription of \citealt{Leitner:2012}) at constant ratios, and the
+scale lengths of the disk, bulge, and nucleus decrease in proportion to the
+virial radius (e.g., \citealt{Kravtsov:2013}).
 We assume that the dark matter scale radius is constant with redshift leading to
 halo concentration, $c = R_{\rm vir} / r_{\rm H}$, evolution similar to that
 seen in cosmological simulations (e.g., \citealt{Munoz-Cuartas:2011}).
 In terms of the virial quantities, the halo scale mass, $M_{\rm H}$, is given by
 \begin{eqnarray}
-  M_{\rm H} &=& \frac{M_{\rm vir}}{\ln(c+1) - c/(c+1)}
+  M_{\rm H}(t) &=& \frac{M_{\rm vir}}{\ln(c+1) - c/(c+1)}
 \end{eqnarray}
 and only grows by a factor of $\approx$2.75 from $z=3$ to present, while the
 virial mass of the halo grows by a factor of $\approx$15 (as is roughly
-consistent with, e.g., \citealt{Cuesta:2008,Diemer:2013}).
+consistent with, e.g., \citealt{Cuesta:2008,Diemer:2013}), where $c = r_{\rm
+vir}(t) / r_{\rm H}$ is the halo concentration.
+The present-day virial mass and radius in this model is $M_{\rm vir}(0) \approx
+8.4 \times 10^{11}~\msun$ and $r_{\rm vir}(0) \approx 250~\kpc$.
 
 The expressions used to evolve the potential parameters are:
 \begin{eqnarray}
@@ -240,12 +247,12 @@ The expressions used to evolve the potential parameters are:
   \quad ,
 \end{eqnarray}
 where $t=0$, $z=0$ is present day and we evolve the clusters starting at $t_0 =
--XX~{\rm Gyr}$, $z_0 = 3$, the form of $f_*(t)$ and parameters are taken from
-\citealt{Leitner:2012} (see Appendix, \eqname~A3 in their work),
-\todo{more stuff}.
-
-
-
+-11.2 ~{\rm Gyr}$, $z_0 = 2.5$.
+The form of $f_*(t)$ and parameters are taken from
+\citealt{Leitner:2012} (see Appendix, \eqname~A3 in their work).
+\figname~\ref{fig:mass-evolution} shows the evolution of the virial mass, mass
+enclosed within the halo scale radius, and virial radius as functions of
+redshift.
 
 \begin{floattable}
 \begin{deluxetable}{r l}
@@ -274,6 +281,15 @@ $r_{\rm N}$ & $67.9~\pc$ \\
 \end{deluxetable}
 \end{floattable}
 
+\begin{figure*}[h]
+\begin{center}
+\includegraphics[width=0.65\textwidth]{figures/mass-evolution.pdf}
+\end{center}
+\caption{%
+\todo{caption}
+\label{fig:mass-evolution}}
+\end{figure*}
+
 \subsection{Globular cluster initial mass distribution} \label{sec:gcmassdist}
 
 We assume that the initial cluster masses $m_0$ are drawn from a power-law
@@ -290,26 +306,29 @@ to disrupt very early and probably before they are tidally stripped from their
 host systems.
 The maximum mass scale is fixed to the fiducial value used in
 \citealt{Gnedin:2014}.
+\todo{Eve Ostriker suggested setting $M_{min}$ = the minimum observed mass we see
+today instead of an arbitrary cutoff of $10^4$ since we're just trying to
+reproduce the ones we see now.}
 
 \subsection{Cluster orbits} \label{sec:aqorbits}
 
 The orbits of the individual clusters are either drawn from (1) a spherical,
-isotropic distribution function embedded in the (instantaneous) background Milky
-Way potential (\sectionname~\ref{sec:massmodel}) or (2) are assumed to be
-accreted cosmologically in satellites and deposited into the Milky Way once the
-satellites fully disrupt.
+isotropic distribution function embedded in the background Milky Way potential
+or (2) are assumed to be accreted cosmologically in satellites and deposited
+into the Milky Way once the satellites fully disrupt.
 
-\subsubsection{Case 1: Embedded spherical distribution function} \label{sec:sphdf}
+\subsubsection{Scenario 1: Embedded spherical distribution function} \label{sec:sphdf}
 
-For this case, we follow previous work and assume the density profile of the
-initial globular cluster system follows a S\'ersic profile with effective radius
-$R_e=4$ and index $n_s = 2.2$ (see \sectionname~3 in \citealt{Gnedin:2014}).
+For this scenario, we follow previous work and assume that the density profile
+of the initial globular cluster system follows a S\'ersic profile with effective
+radius $R_e=4$ and index $n_s = 2.2$ (see \sectionname~3 in
+\citealt{Gnedin:2014}).
 This choice comes from assuming that, if the globular cluster system were in
 place at an early time, the density profile of clusters, $\nu(r)$, likely
 follows that of the stars (which is approximately S\'ersic).
 We use this tracer density profile $\nu(r)$ and compute a spherically-averaged
-version of the Milky Way mass model to evaluate the relative potential
-$\Psi(r,t) = -\Phi(r,t)$ and use Eddington's formula
+version of the instantaneous Milky Way mass model to evaluate the relative
+potential $\Psi(r) = -\Phi_{\rm MW}(r,t)$ and use Eddington's formula
 (\citealt{Eddington:1916,Binney:2008}) to evaluate the \df, $f(\mathcal{E})$,
 along a grid of relative energies $\mathcal{E} = \Psi - \frac{1}{2}v^2$:
 \begin{eqnarray}
