@@ -3,6 +3,12 @@
 #include <potential/builtin/builtin_potentials.h>
 
 /* ---------------------------------------------------------------------------
+    Implements the function f* from Leitner 2012, which is related to the
+    star formation rate at a given time. The one modification we make here is
+    to
+*/
+
+/* ---------------------------------------------------------------------------
     Hernquist sphere
 */
 double growing_hernquist_value(double t, double *pars, double *q, int n_dim) {

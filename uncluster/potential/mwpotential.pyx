@@ -109,4 +109,5 @@ class GrowingHernquistPotential(CPotentialBase):
 
         super(GrowingHernquistPotential, self).__init__(parameters=parameters,
                                                         parameter_physical_types=ptypes,
-                                                        units=units)
+                                                        units=units,
+                                                        Wrapper=GrowingHernquistWrapper)
