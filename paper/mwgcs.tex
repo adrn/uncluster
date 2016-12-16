@@ -1,6 +1,34 @@
 % General notes:
 % - Should cite: https://ui.adsabs.harvard.edu/#abs/2014ApJ...784...95M/abstract
 
+% TODO:
+% - We only care about clusters outside of the Galactic nucleus, so we are using
+%   a simple potential for the nucleus. Make note of this in text.
+% - The gas fraction in the disk evolves with redshift, likely increases with
+%   lookback time like ~ (1+z) from present value -- represent the gas as a
+%   second Miyamoto-Nagai potential with the same parameters as the stars, but
+%   take some mass out of stellar disk and put in gas disk.
+% - The virial mass of the halo should go like ~ exp(-0.8*z) instead of 0.9 --
+%   see Oleg's simple derivation.
+% - In Leitner's expression for the stellar mass evolution of the disk, the mass
+%   falls off very steeply after z~2.5, but this is likely just because the SFR
+%   data does not exist. If we look instead at Behroozi+ 2013, the SFR doesn't
+%   go to 0 but instead falls of to near ~1 Msun/year by z=4. So, before peak of
+%   SFR (z~2), SFR is ~ (1+z)^-3 until early times.
+% - We will start our models at z=3.
+% - We will consider two cases for the assembly history of the most bound Milky
+%   Way clusters:
+%     1) The clusters form all at once / are in place at z=3 with somewhat
+%        (spatially) extended DF so that by present day they reproduce mass
+%        distribution and spatial density of clusters
+%     2) Extended distribution of formation times with peak at z=3 and standard
+%        deviation ~ 1-2 Gyr.
+%   In both cases, there needs to be an accreted component to explain the halo
+%   clusters. We will initialize these cluster orbits by sampling from a DF
+%   motivated by, for example, the Illustris halos. We may be able to treat
+%   these two populations independently when doing the modeling because the
+%   clusters outside of ~10 kpc will come from the accreted population.
+
 \documentclass[manuscript, letterpaper]{aastex6}
 
 \include{gitstuff}
