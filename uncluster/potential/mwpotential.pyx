@@ -50,6 +50,14 @@ cdef extern from "components.h":
     void growing_hernquist_gradient(double t, double *pars, double *q, int n_dim, double *grad) nogil
     double growing_hernquist_density(double t, double *pars, double *q, int n_dim) nogil
 
+    double growing_miyamotonagai_value(double t, double *pars, double *q, int n_dim) nogil
+    void growing_miyamotonagai_gradient(double t, double *pars, double *q, int n_dim, double *grad) nogil
+    double growing_miyamotonagai_density(double t, double *pars, double *q, int n_dim) nogil
+
+    double growing_sphericalnfw_value(double t, double *pars, double *q, int n_dim) nogil
+    void growing_sphericalnfw_gradient(double t, double *pars, double *q, int n_dim, double *grad) nogil
+    double growing_sphericalnfw_density(double t, double *pars, double *q, int n_dim) nogil
+
 #
 
 cdef class GrowingHernquistWrapper(CPotentialWrapper):
@@ -111,3 +119,125 @@ class GrowingHernquistPotential(CPotentialBase):
                                                         parameter_physical_types=ptypes,
                                                         units=units,
                                                         Wrapper=GrowingHernquistWrapper)
+
+cdef class GrowingMiyamotoNagaiWrapper(CPotentialWrapper):
+
+    def __init__(self, G, parameters):
+        cdef CPotential cp
+
+        # This is the only code that needs to change per-potential
+        cp.value[0] = <energyfunc>(growing_miyamotonagai_value)
+        cp.density[0] = <densityfunc>(growing_miyamotonagai_density)
+        cp.gradient[0] = <gradientfunc>(growing_miyamotonagai_gradient)
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        cp.n_components = 1
+        self._params = np.array([G] + list(parameters), dtype=np.float64)
+        self._n_params = np.array([len(self._params)], dtype=np.int32)
+        cp.n_params = &(self._n_params[0])
+        cp.parameters[0] = &(self._params[0])
+        cp.n_dim = 3
+        self.cpotential = cp
+
+class GrowingMiyamotoNagaiPotential(CPotentialBase):
+    r"""
+    GrowingMiyamotoNagaiPotential(m, a, b, units=None)
+
+    Miyamoto-Nagai potential for a flattened mass distribution.
+
+    .. math::
+
+        \Phi(R,z) = -\frac{G M}{\sqrt{R^2 + (a + \sqrt{z^2 + b^2})^2}}
+
+    See: http://adsabs.harvard.edu/abs/1975PASJ...27..533M
+
+    Parameters
+    ----------
+    m0 : :class:`~astropy.units.Quantity`, numeric [mass]
+        Mass at z=0.
+    a0 : :class:`~astropy.units.Quantity`, numeric [length]
+        Scale length at z=0.
+    b : :class:`~astropy.units.Quantity`, numeric [length]
+        Scare height.
+    units : `~gala.units.UnitSystem` (optional)
+        Set of non-reducable units that specify (at minimum) the
+        length, mass, time, and angle units.
+
+    """
+    def __init__(self, m0, a0, b, units=None):
+        parameters = OrderedDict()
+        ptypes = OrderedDict()
+
+        parameters['m0'] = m0
+        ptypes['m0'] = 'mass'
+
+        parameters['a0'] = a0
+        ptypes['a0'] = 'length'
+
+        parameters['b'] = b
+        ptypes['b'] = 'length'
+
+        super(GrowingMiyamotoNagaiPotential, self).__init__(parameters=parameters,
+                                                            parameter_physical_types=ptypes,
+                                                            units=units,
+                                                            Wrapper=GrowingMiyamotoNagaiWrapper)
+
+cdef class GrowingSphericalNFWWrapper(CPotentialWrapper):
+
+    def __init__(self, G, parameters):
+        cdef CPotential cp
+
+        # This is the only code that needs to change per-potential
+        cp.value[0] = <energyfunc>(sphericalnfw_value)
+        cp.density[0] = <densityfunc>(sphericalnfw_density)
+        cp.gradient[0] = <gradientfunc>(sphericalnfw_gradient)
+        cp.hessian[0] = <hessianfunc>(sphericalnfw_hessian)
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        cp.n_components = 1
+        self._params = np.array([G] + list(parameters), dtype=np.float64)
+        self._n_params = np.array([len(self._params)], dtype=np.int32)
+        cp.n_params = &(self._n_params[0])
+        cp.parameters[0] = &(self._params[0])
+        cp.n_dim = 3
+        self.cpotential = cp
+
+class GrowingSphericalNFWPotential(CPotentialBase):
+    r"""
+    GrowingSphericalNFWPotential(m, r_s, a=1, b=1, c=1, units=None)
+
+    General Navarro-Frenk-White potential. Supports spherical, flattened, and
+    triaxiality but the flattening is introduced into the potential, not the
+    density, and can therefore lead to unphysical mass distributions. For a
+    triaxial NFW potential that supports flattening in the density, see
+    :class:`gala.potential.LeeSutoTriaxialNFWPotential`.
+
+    .. math::
+
+        \Phi(r) = -\frac{v_c^2}{\sqrt{\ln 2 - \frac{1}{2}}} \frac{\ln(1 + r/r_s)}{r/r_s}
+
+    Parameters
+    ----------
+    m0 : :class:`~astropy.units.Quantity`, numeric [mass]
+        Scale mass at z=0.
+    r_s : :class:`~astropy.units.Quantity`, numeric [length]
+        Scale radius.
+    units : `~gala.units.UnitSystem` (optional)
+        Set of non-reducable units that specify (at minimum) the
+        length, mass, time, and angle units.
+
+    """
+    def __init__(self, m0, r_s, units=None):
+        parameters = OrderedDict()
+        ptypes = OrderedDict()
+
+        parameters['m0'] = m0
+        ptypes['m0'] = 'mass'
+
+        parameters['r_s'] = r_s
+        ptypes['r_s'] = 'length'
+
+        super(GrowingSphericalNFWPotential, self).__init__(parameters=parameters,
+                                                           parameter_physical_types=ptypes,
+                                                           units=units,
+                                                           Wrapper=GrowingSphericalNFWWrapper)
