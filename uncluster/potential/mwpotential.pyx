@@ -120,6 +120,7 @@ class GrowingHernquistPotential(CPotentialBase):
                                                         units=units,
                                                         Wrapper=GrowingHernquistWrapper)
 
+
 cdef class GrowingMiyamotoNagaiWrapper(CPotentialWrapper):
 
     def __init__(self, G, parameters):
