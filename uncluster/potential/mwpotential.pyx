@@ -189,10 +189,9 @@ cdef class GrowingSphericalNFWWrapper(CPotentialWrapper):
         cdef CPotential cp
 
         # This is the only code that needs to change per-potential
-        cp.value[0] = <energyfunc>(sphericalnfw_value)
-        cp.density[0] = <densityfunc>(sphericalnfw_density)
-        cp.gradient[0] = <gradientfunc>(sphericalnfw_gradient)
-        cp.hessian[0] = <hessianfunc>(sphericalnfw_hessian)
+        cp.value[0] = <energyfunc>(growing_sphericalnfw_value)
+        cp.density[0] = <densityfunc>(growing_sphericalnfw_density)
+        cp.gradient[0] = <gradientfunc>(growing_sphericalnfw_gradient)
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
         cp.n_components = 1
