@@ -25,8 +25,8 @@ double f_star(double t) {
     double ret;
     gsl_interp *intp = gsl_interp_alloc(gsl_interp_linear, interp_grid_size);
 
-    (void) gsl_interp_init(intp, &t_grid, &R_vir_grid, interp_grid_size);
-    ret = gsl_interp_eval(intp, &t_grid, &R_vir_grid, t, NULL);
+    (void) gsl_interp_init(intp, &t_grid, &fstar_grid, interp_grid_size);
+    ret = gsl_interp_eval(intp, &t_grid, &fstar_grid, t, NULL);
     gsl_interp_free(intp);
 
     return ret;
@@ -67,7 +67,7 @@ double growing_hernquist_value(double t, double *pars, double *q, int n_dim) {
     int n_pars = 3;// 3 parameters
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
-    pars_t[1] = pars[1] + f_star(t);
+    pars_t[1] = pars[1] * f_star(t);
     pars_t[2] = pars[2] * R_vir(t) / R_vir0;
 
     return hernquist_value(t, pars_t, q, n_dim);
@@ -82,7 +82,7 @@ void growing_hernquist_gradient(double t, double *pars, double *q, int n_dim, do
     int n_pars = 3;// 3 parameters
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
-    pars_t[1] = pars[1] + f_star(t);
+    pars_t[1] = pars[1] * f_star(t);
     pars_t[2] = pars[2] * R_vir(t) / R_vir0;
 
     hernquist_gradient(t, pars_t, q, n_dim, grad);
@@ -97,7 +97,7 @@ double growing_hernquist_density(double t, double *pars, double *q, int n_dim) {
     int n_pars = 3;// 3 parameters
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
-    pars_t[1] = pars[1] + f_star(t);
+    pars_t[1] = pars[1] * f_star(t);
     pars_t[2] = pars[2] * R_vir(t) / R_vir0;
 
     return hernquist_density(t, pars_t, q, n_dim);
@@ -116,7 +116,7 @@ double growing_miyamotonagai_value(double t, double *pars, double *q, int n_dim)
     int n_pars = 4;
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
-    pars_t[1] = pars[1] + f_star(t);
+    pars_t[1] = pars[1] * f_star(t);
     pars_t[2] = pars[2] * R_vir(t) / R_vir0;
 
     return miyamotonagai_value(t, pars_t, q, n_dim);
@@ -132,7 +132,7 @@ void growing_miyamotonagai_gradient(double t, double *pars, double *q, int n_dim
     int n_pars = 4;
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
-    pars_t[1] = pars[1] + f_star(t);
+    pars_t[1] = pars[1] * f_star(t);
     pars_t[2] = pars[2] * R_vir(t) / R_vir0;
 
     miyamotonagai_gradient(t, pars_t, q, n_dim, grad);
@@ -149,7 +149,7 @@ double growing_miyamotonagai_density(double t, double *pars, double *q, int n_di
     int n_pars = 4;
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
-    pars_t[1] = pars[1] + f_star(t);
+    pars_t[1] = pars[1] * f_star(t);
     pars_t[2] = pars[2] * R_vir(t) / R_vir0;
 
     return miyamotonagai_density(t, pars_t, q, n_dim);
