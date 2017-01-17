@@ -58,7 +58,8 @@ cdef extern from "components.h":
     void growing_sphericalnfw_gradient(double t, double *pars, double *q, int n_dim, double *grad) nogil
     double growing_sphericalnfw_density(double t, double *pars, double *q, int n_dim) nogil
 
-#
+__all__ = ['GrowingHernquistPotential', 'GrowingMiyamotoNagaiPotential',
+           'GrowingSphericalNFWPotential']
 
 cdef class GrowingHernquistWrapper(CPotentialWrapper):
 

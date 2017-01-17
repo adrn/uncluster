@@ -21,14 +21,14 @@ def get_extensions():
 
     cfg['extra_compile_args'].append('--std=gnu99')
 
-    cfg['sources'].append('uncluster/potential/mwpotential.pyx')
+    cfg['sources'].append('uncluster/potential/components.pyx')
     cfg['sources'].append(os.path.join(gala_potential_incl, 'potential/builtin/builtin_potentials.c'))
-    cfg['sources'].append('uncluster/potential/components.c')
-    exts.append(Extension('uncluster.potential.mwpotential', **cfg))
+    cfg['sources'].append('uncluster/potential/src/components.c')
+    exts.append(Extension('uncluster.potential.components', **cfg))
 
     return exts
 
 def get_package_data():
     return {'uncluster.potential':
             ['*.h', '*.pyx', '*.pxd',
-             'components.h', 'components.c']}
+             'src/components.h', 'src/components.c']}
