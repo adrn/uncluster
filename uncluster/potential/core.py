@@ -8,6 +8,7 @@ from .mwpotential import (GrowingHernquistPotential,
                           GrowingMiyamotoNagaiPotential,
                           GrowingSphericalNFWPotential)
 
+# best-fit values come from running the notebook "Fit mass model.ipynb"
 mw_potential = gp.CCompositePotential()
 mw_potential['nucl'] = GrowingHernquistPotential(m0=1.66E9, c0=65*u.pc, units=galactic) # best-fit values
 mw_potential['bulge'] = GrowingHernquistPotential(m0=5E9, c0=1., units=galactic)
