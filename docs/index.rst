@@ -2,9 +2,6 @@
 Uncluster
 *********
 
-To re-generate the best-fit potential paramters (which are hard-coded in
-``uncluster/potential/core.py``), you can run the script `fit-potential.py`.
-
 The broad overview of what happens here is:
 
 1. Choose radial and mass distributions for the initial globular cluster
@@ -27,6 +24,28 @@ The broad overview of what happens here is:
 4. Paint stellar populations (and abundances???) on to the star particles in
    each stream. Generate mock images with a background...
 
+Starting from scratch
+=====================
+
+Here I'll write all of the steps needed to reproduce the results starting from a
+clean clone of this repository.
+
+1. The first thing to do, even before installing the package, is to setup the
+   metadata needed for the Milky Way mass model. Two things need to happen: (a)
+   we need to generate best-fit parameters for the halo and nucleus components
+   (we fix the disk and bulge models), and (b) we need to generate C arrays that
+   specify the time evolution of the different potential parameters so we can
+   interpolate to get the potential at any given time. Both of these are handled
+   by the same script, ``setup_potential.py``. Run this script from the
+   ``scripts`` directory. This will generate some code and place two files in
+   the project directory: ``uncluster/potential/potential_config.py`` and
+   ``uncluster/potential/src/cosmo_arrays.h``.
+
+   Now you should install the package using::
+
+      python setup.py install
+
+2.
 
 API
 ===
