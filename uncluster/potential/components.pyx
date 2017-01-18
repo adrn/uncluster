@@ -7,8 +7,6 @@
 
 from __future__ import division, print_function
 
-__author__ = "adrn <adrn@astro.columbia.edu>"
-
 # Standard library
 from collections import OrderedDict
 
@@ -45,7 +43,7 @@ cdef extern from "potential/src/cpotential.h":
         int n_params[MAX_N_COMPONENTS]
         double *parameters[MAX_N_COMPONENTS]
 
-cdef extern from "components.h":
+cdef extern from "src/components.h":
     double growing_hernquist_value(double t, double *pars, double *q, int n_dim) nogil
     void growing_hernquist_gradient(double t, double *pars, double *q, int n_dim, double *grad) nogil
     double growing_hernquist_density(double t, double *pars, double *q, int n_dim) nogil
