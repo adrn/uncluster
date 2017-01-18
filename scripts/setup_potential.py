@@ -23,10 +23,14 @@ import gala.potential as gp
 from gala.units import galactic
 from scipy.interpolate import interp1d
 
-# These are the only configurable items - if you change them here, you must also change them in
-#   uncluster/config.py
+##############################################################################
+# These are the only configurable items - if you change them here, you must
+# also change them in `uncluster/config.py`
+#
 cosmology = ac.Planck15
 halo_concentration = 15. # MAGIC NUMBER - assumption
+#
+##############################################################################
 
 # Project
 def get_potential(log_M_h, log_r_s, log_M_n, log_a):
