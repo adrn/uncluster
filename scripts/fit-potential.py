@@ -1,6 +1,9 @@
 """
 Fit the potential model to Milky Way enclosed mass measurements compiled by
-Oleg Gnedin and Andreas Kuepper
+Oleg Gnedin and Andreas Kuepper. The only free parameters are the halo mass,
+halo scale radius, nucleus mass, and nucleus scale radius. The best-fit values
+from this script are then dumped into uncluster/potential/core.py to be used
+for the rest of the project.
 """
 
 # Standard library

@@ -2,6 +2,9 @@
 Uncluster
 *********
 
+To re-generate the best-fit potential paramters (which are hard-coded in
+``uncluster/potential/core.py``), you can run the script `fit-potential.py`.
+
 The broad overview of what happens here is:
 
 1. Choose radial and mass distributions for the initial globular cluster
