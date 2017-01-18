@@ -46,7 +46,7 @@ def main(plot=False):
         raise IOError("Could not find data path -- you should run this from the "
                       "'scripts' directory.")
 
-    potential_path = abspath("../uncluster/potential/src/")
+    potential_path = abspath("../uncluster/potential/")
     if not exists(potential_path):
         raise IOError("Could not find path to potential subpackage -- you should "
                       "run this script from the 'scripts' directory.")
@@ -134,12 +134,17 @@ def main(plot=False):
     m_n = np.exp(p_opt[2])
     a = np.exp(p_opt[3])
 
-    print("Best fit values (as code, to put in uncluster/potential/core.py):")
-    print("-----------------------------------------------------------------")
-    print("m_h = {:.2e} * u.Msun".format(m_h))
-    print("r_s = {:.2f} * u.kpc".format(r_s))
-    print("m_n = {:.2e} * u.Msun".format(m_n))
-    print("c_n = {:.2f} * u.pc".format(a))
+    lines = []
+    lines.append("# vvv --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- vvv\n")
+    lines.append("import astropy.units as u")
+    lines.append("m_h = {:.2e} * u.Msun\n".format(m_h))
+    lines.append("r_s = {:.2f} * u.kpc\n".format(r_s))
+    lines.append("m_n = {:.2e} * u.Msun\n".format(m_n))
+    lines.append("c_n = {:.2f} * u.pc\n".format(a))
+    lines.append("# ^^^ --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- ^^^")
+
+    with open(join(potential_path, "potential_config.py"), "w") as f:
+        f.writelines(lines)
 
     ##########################################################################
     # 2. Now solve for the cosmological evolution of the parameters:
@@ -221,7 +226,7 @@ def main(plot=False):
 
     lines = top_lines + lines
     lines = lines + ['// ^^^ --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- ^^^\n']
-    with open(join(potential_path, "cosmo_arrays.h"), "w") as f:
+    with open(join(potential_path, "src", "cosmo_arrays.h"), "w") as f:
         f.writelines(lines)
 
 if __name__ == "__main__":

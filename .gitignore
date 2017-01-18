@@ -52,8 +52,9 @@ distribute-*.tar.gz
 # Mac OSX
 .DS_Store
 
-# generated file
+# generated files
 uncluster/potential/src/cosmo_arrays.h
+uncluster/potential/potential_config.py
 
 cache
 plots
