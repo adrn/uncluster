@@ -27,6 +27,7 @@ import astropy.units as u
 import gala.integrate as gi
 import gala.dynamics as gd
 from gala.dynamics.mockstream import dissolved_fardal_stream, fardal_stream
+import gala.potential as gp
 from gala.units import galactic
 import h5py
 import numpy as np
@@ -47,6 +48,7 @@ class MockStreamWorker(object):
         self.t_grid = t_grid
         self.overwrite = overwrite
         self.release_every = release_every
+        self.H = gp.Hamiltonian(mw_potential)
 
     def work(self, i, initial_mass, w0, dt):
 
@@ -59,9 +61,9 @@ class MockStreamWorker(object):
                      .format(i, initial_mass))
 
         # TODO: integrate orbit
-        gc_orbit = mw_potential.integrate_orbit(w0, dt=dt,
-                                                t1=t_max, t2=0.,
-                                                Integrator=gi.DOPRI853Integrator)
+        gc_orbit = self.H.integrate_orbit(w0, dt=dt,
+                                          t1=t_max, t2=0.,
+                                          Integrator=gi.DOPRI853Integrator)
         logger.debug("\t Orbit integrated for {} steps".format(len(gc_orbit.t)))
 
         t_grid = gc_orbit.t.to(u.Gyr).value
@@ -76,7 +78,7 @@ class MockStreamWorker(object):
             return
 
         # set disruption time to NaN for those that don't disrupt
-        t_disrupt = self.t_grid[disrupt_idx+1]
+        t_disrupt = t_grid[disrupt_idx+1]
         # if (t_disrupt == .to(u.Myr).value) | (t_disrupt == 0):
         #     t_disrupt = np.nan # didn't disrupt
         logger.debug("\t Cluster disrupted at: {}".format(t_disrupt))
@@ -92,32 +94,38 @@ class MockStreamWorker(object):
 
         # orbit has different times than mass_grid
         # TODO: no longer true!
-        mass_interp_func = interp1d(self.t_grid, mass_grid, fill_value='extrapolate')
+        mass_interp_func = interp1d(t_grid, mass_grid, fill_value='extrapolate')
         m_t = mass_interp_func(gc_orbit.t.to(u.Myr).value)
         m_t[m_t<=0] = 1. # Msun HACK: can mock_stream not handle m=0?
         m_t = mass_grid
 
-        logger.debug("\t Generating mock stream with {} particles"
-                     .format(len(gc_orbit.t)//self.release_every*2))
+        logger.debug("\t Generating mock stream with {} particles over {} steps"
+                     .format(len(gc_orbit.t)//self.release_every*2, len(gc_orbit.t)))
 
         try:
             if np.isnan(t_disrupt): # cluster doesn't disrupt
-                logger.debug("Cluster didn't disrupt")
-                stream = fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
+                logger.debug("\t Cluster didn't disrupt")
+                stream = fardal_stream(self.H, gc_orbit, m_t*u.Msun,
                                        release_every=self.release_every,
                                        Integrator=gi.DOPRI853Integrator)
 
             else: # cluster disrupts completely
-                logger.debug("Cluster fully disrupted at {}".format(t_disrupt*u.Myr))
-                stream = dissolved_fardal_stream(mw_potential, gc_orbit, m_t*u.Msun,
+                logger.debug("\t Cluster fully disrupted at {}".format(t_disrupt*u.Myr))
+                stream = dissolved_fardal_stream(self.H, gc_orbit, m_t*u.Msun,
                                                  t_disrupt*u.Myr, release_every=self.release_every,
                                                  Integrator=gi.DOPRI853Integrator)
         except:
-            logger.error("Failed to generate mock stream for cluster {}: \n\t {}"
+            logger.error("\t Failed to generate mock stream for cluster {}: \n\t {}"
                          .format(i, sys.exc_info()[0]))
             return
 
-        logger.debug("Done generating mock stream.")
+        logger.debug("\t ...done generating mock stream.")
+
+        stream.plot()
+        import matplotlib.pyplot as plt
+        plt.show()
+
+        sys.exit(0)
 
         release_time = np.vstack((gc_orbit.t[::self.release_every].to(u.Myr).value,
                                   gc_orbit.t[::self.release_every].to(u.Myr).value)).T.ravel()
@@ -199,7 +207,7 @@ def main(cache_file, pool, overwrite=False):
     worker = MockStreamWorker(t_grid=t_grid,
                               cache_file=cache_file,
                               overwrite=overwrite,
-                              release_every=4) # MAGIC NUMBER
+                              release_every=16) # MAGIC NUMBER
     tasks = [[i, gc_masses[i], w0[i], dt] for i in range(n_clusters)]
 
     for r in pool.map(worker, tasks, callback=worker.callback):

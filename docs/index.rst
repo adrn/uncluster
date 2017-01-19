@@ -24,28 +24,35 @@ The broad overview of what happens here is:
 4. Paint stellar populations (and abundances???) on to the star particles in
    each stream. Generate mock images with a background...
 
-Starting from scratch
-=====================
 
-Here I'll write all of the steps needed to reproduce the results starting from a
-clean clone of this repository.
+Re-initializing the generated code
+==================================
 
-1. The first thing to do, even before installing the package, is to setup the
-   metadata needed for the Milky Way mass model. Two things need to happen: (a)
-   we need to generate best-fit parameters for the halo and nucleus components
-   (we fix the disk and bulge models), and (b) we need to generate C arrays that
-   specify the time evolution of the different potential parameters so we can
-   interpolate to get the potential at any given time. Both of these are handled
-   by the same script, ``setup_potential.py``. Run this script from the
-   ``scripts`` directory. This will generate some code and place two files in
-   the project directory: ``uncluster/potential/potential_config.py`` and
-   ``uncluster/potential/src/cosmo_arrays.h``.
+Some of the files that specify the parameters and evolution of the Milky Way
+potential model were auto-generated and included in the repository. You
+shouldn't need to re-generated these files, unless you'd like to re-do the
+entire experiment with a new set of Milky Way mass measurements (data). To
+re-generate these files, you have to run the ``setup_potential.py`` script. This
+script generates the files:
 
-   Now you should install the package using::
+   - ``uncluster/potential/potential_config.py``
+   - ``uncluster/potential/src/cosmo_arrays.h``
+   - ``data/apw_menc.txt``
 
-      python setup.py install
+These files contain (a) best-fit parameters for the halo and nucleus components
+(we fix the disk and bulge models), and (b) C arrays that specify the time
+evolution of the different potential parameters so we can interpolate to get the
+potential at any given time.
 
-2.
+Reproducing the results
+=======================
+
+Here I'll describe all of the steps needed to reproduce the results starting
+from a clean clone of this repository.
+
+1. ``setup_df.py`` to generate grid of E-DF values
+2. ``make_clusters.py`` to generate initial conditions and orbits for clusters
+3. ``make_streams.py`` to generate mock streams for the clusters
 
 API
 ===
