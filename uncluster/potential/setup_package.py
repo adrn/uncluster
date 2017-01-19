@@ -31,4 +31,4 @@ def get_extensions():
 def get_package_data():
     return {'uncluster.potential':
             ['*.h', '*.pyx', '*.pxd',
-             'src/components.h', 'src/components.c']}
+             'src/components.h', 'src/components.c', 'src/*.h']}
