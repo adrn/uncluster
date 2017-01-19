@@ -1,1 +1,1 @@
-from ._core import solve_mass_radius
+from .core import solve_mass_evolution

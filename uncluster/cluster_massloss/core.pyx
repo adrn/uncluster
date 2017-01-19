@@ -5,8 +5,6 @@
 # cython: wraparound=False
 # cython: profile=False
 
-__author__ = "adrn <adrn@princeton.edu>"
-
 # Third-party
 import astropy.units as u
 import numpy as np
@@ -36,24 +34,13 @@ cdef double t_iso(double M):
     """ Isolation disruption timescale (2-body evaporation)"""
     return 17. * (M / 2E5) # Gyr, Eq. 5
 
-cdef double t_df(double r, double M, double vc, double circ):
-    cdef double f_e = exp(1.9*(circ - 1)); # Boylan-Kolchin et al. 2008
-    return 64. * r*r * vc/283. * (2E5/M) * f_e # Gyr, Eq. 8
+cdef void dy_dt(double M, double t, double r, double vc, double *out):
+    cdef double tid, iso, min_t
 
-cdef void dy_dt(double M, double r2, double circ, double t,
-                gsl_interp_accel *acc, gsl_interp *spline,
-                double *rgrid, double *vcgrid,
-                double *out):
-    cdef double tid, iso, min_t, vc
-
-    if M <= 0 or r2 <= 0:
+    if M <= 0:
         out[0] = _NAN
-        out[1] = _NAN
         return
 
-    r = sqrt(r2)
-
-    vc = gsl_interp_eval(spline, rgrid, vcgrid, r, acc)
     tid = t_tid(r, M, vc)
     iso = t_iso(M)
 
@@ -63,93 +50,67 @@ cdef void dy_dt(double M, double r2, double circ, double t,
         min_t = iso
 
     out[0] = -M / min_t
-    out[1] = -r2 / t_df(r, M, vc, circ)
 
-cdef _solve_mass_radius(double M0, double r0, double circ, double *t_grid, int n_times,
-                        gsl_interp_accel *acc, gsl_interp *spline,
-                        double *rgrid, double *vcgrid):
+cdef _solve_mass_evolution(double M0, double *t_grid, int n_times,
+                           double *r_grid, double *vc_grid):
     cdef:
         double[::1] M = np.zeros(n_times)
-        double[::1] r2 = np.zeros(n_times)
         double dt = t_grid[1] - t_grid[0]
-
         int i
 
-        # container
+        # containers
         double[::1] y_dot = np.zeros(2)
         double[:,::1] q = np.zeros((1,3))
 
     # set initial conditions
     M[0] = M0
-    r2[0] = r0**2 # solve for r^2 not r
 
     # use a forward Euler method instead...
     for i in range(n_times-1):
-        dy_dt(M[i], r2[i], circ, t_grid[i], acc, spline,
-              rgrid, vcgrid, &y_dot[0])
+        dy_dt(M[i], t_grid[i],
+              r_grid[i], vc_grid[i], &y_dot[0])
 
         M[i+1] = M[i] + y_dot[0]*dt
-        r2[i+1] = r2[i] + y_dot[1]*dt
 
-        if isnan(y_dot[0]) or isnan(y_dot[1]) or M[i+1]<=0:
+        if isnan(y_dot[0]) or M[i+1]<=0:
             break
 
-    return i, np.array(M), np.sqrt(np.array(r2))
+    return i, np.array(M)
 
-cpdef solve_mass_radius(_M0s, _r0s, _circs, _t_grid):
+cpdef solve_mass_evolution(_M0, _t_grid, _r_grid):
     """
-    solve_mass_radius(M0s, r0s, circs, t_grid)
+    solve_mass_evolution(M0, t_grid, r_grid)
     """
 
-    _M0s = np.atleast_1d(_M0s)
-    _r0s = np.atleast_1d(_r0s)
-    _circs = np.atleast_1d(_circs)
     _t_grid = np.atleast_1d(_t_grid)
+    _r_grid = np.atleast_1d(_r_grid)
 
-    if _M0s.ndim > 1 or _r0s.ndim > 1 or _circs.ndim > 1 or _t_grid.ndim > 1:
+    if _t_grid.ndim > 1 or _r_grid.ndim > 1:
         raise ValueError("input arrays must be 1d")
 
+    if len(_t_grid) != len(_r_grid):
+        raise ValueError("Time and radius grid must have same shape.")
+
     cdef:
+        double M0 = float(_M0)
+
         # make memoryviews
-        double[::1] M0s = _M0s
-        double[::1] r0s = _r0s
         double[::1] t_grid = _t_grid
-        double[::1] circs = _circs
-        int n_clusters = len(_M0s)
+        double[::1] r_grid = _r_grid
         int n_times = len(t_grid)
         int i
 
-        int[::1] i_disrupt = np.zeros(n_clusters, dtype=np.int32)
+        int disrupt_idx
 
-        # set up interpolation stuff
-        int n_grid = 1024
-        double[::1] r_grid = np.logspace(-3., 3, n_grid)
-        double[:,::1] _q = np.zeros((3,len(r_grid)))
-
+        # compute vc at all radii, times
+        double[:,::1] _q = np.zeros((3,n_times))
         double[::1] vc_grid
 
-        # GSL interpolation
-        gsl_interp_accel *acc
-        gsl_interp *vc_func
+    for i in range(n_times):
+        _q[0,i] = r_grid[i]
+    vc_grid = pot.circular_velocity(_q, t=_t_grid).to(u.km/u.s).value
 
-    _q[0] = r_grid
-    vc_grid = pot.circular_velocity(_q).to(u.km/u.s).value
+    disrupt_idx, M = _solve_mass_evolution(M0, &t_grid[0], n_times,
+                                           &r_grid[0], &vc_grid[0])
 
-    acc = gsl_interp_accel_alloc()
-    vc_func = gsl_interp_alloc(gsl_interp_linear, n_grid)
-    gsl_interp_init(vc_func, &r_grid[0], &vc_grid[0], n_grid)
-
-    all_M = []
-    all_r = []
-    for i in range(n_clusters):
-        idx, M, r = _solve_mass_radius(M0s[i], r0s[i], circs[i],
-                                       &t_grid[0], n_times,
-                                       acc, vc_func, &r_grid[0], &vc_grid[0])
-        i_disrupt[i] = idx
-        all_M.append(M)
-        all_r.append(r)
-
-    gsl_interp_free(vc_func)
-    gsl_interp_accel_free(acc)
-
-    return np.array(i_disrupt), all_M, all_r
+    return disrupt_idx, np.array(M)
