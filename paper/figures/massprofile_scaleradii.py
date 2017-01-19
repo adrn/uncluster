@@ -1,6 +1,5 @@
 # Standard library
-from os.path import exists, abspath, join
-import sys
+import os
 
 # Third-party
 from astropy.io import ascii
@@ -9,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Project
+from uncluster import paths
 from uncluster.potential import mw_potential
 from uncluster.config import cosmology
 
@@ -16,14 +16,10 @@ linestyle = dict(marker='', linewidth=2, alpha=0.7) # color="#444444",
 datastyle = dict(marker='o', markersize=4, color='#3182bd', alpha=1.,
                  ecolor='#9ecae1', capthick=0, linestyle='none', elinewidth=1.)
 
-def main():
-    data_path = abspath("../data")
-    figure_path = abspath("../paper/figures")
-    if not exists(data_path) or not exists(figure_path):
-        raise IOError("Could not find path -- you should run this from the "
-                      "'scripts' directory.")
+# TODO: need a plot_config.py file or style file or something...
 
-    tbl = ascii.read(join(data_path, 'apw_menc.txt'))
+def main():
+    tbl = ascii.read(str(paths.data / 'apw_menc.txt'))
 
     r = np.logspace(-3.5, 2.6, 1024)
     xyz = np.zeros((3,r.size))
@@ -59,7 +55,7 @@ def main():
     fig.tight_layout()
 
     # plt.show()
-    fig.savefig(join(figure_path, 'mass-profile.pdf'))
+    fig.savefig('{}.pdf'.format(os.path.splitext(os.path.basename(__file__))[0]))
 
 if __name__ == "__main__":
     main()
