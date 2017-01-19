@@ -24,6 +24,7 @@ def get_extensions():
     cfg['sources'].append('uncluster/potential/components.pyx')
     cfg['sources'].append(os.path.join(gala_potential_incl, 'potential/builtin/builtin_potentials.c'))
     cfg['sources'].append('uncluster/potential/src/components.c')
+    cfg['libraries'] = ['gsl', 'gslcblas']
     exts.append(Extension('uncluster.potential.components', **cfg))
 
     return exts
