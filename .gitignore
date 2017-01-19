@@ -52,11 +52,6 @@ distribute-*.tar.gz
 # Mac OSX
 .DS_Store
 
-# generated files
-uncluster/potential/src/cosmo_arrays.h
-uncluster/potential/potential_config.py
-data/apw_menc.txt
-
 # Other shite
 cache
 plots
@@ -64,3 +59,4 @@ notebooks
 paper
 relevant\ papers/*
 misc
+mpi
