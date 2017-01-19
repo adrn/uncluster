@@ -26,7 +26,7 @@ class DF(object):
 
 class SphericalIsotropicDF(DF):
 
-    def __init__(self, tracer, background):
+    def __init__(self, tracer, background, time=0.):
         """
         Parameters
         ----------
@@ -35,6 +35,8 @@ class SphericalIsotropicDF(DF):
         background : callable, :class:`~gala.potential.PotentialBase`
             This can either be (1) a function / callable that accepts a single radius, or (2) an
             instance of a :class:`~gala.potential.PotentialBase` subclass.
+        time : numeric, `~astropy.units.Quantity`
+            The time to evaluate the background potential.
         """
 
         self.background = background
@@ -53,8 +55,16 @@ class SphericalIsotropicDF(DF):
         else:
             raise ValueError("Invalid tracer density function") # TODO: why?
 
+        # validate input time
+        if hasattr(time, 'unit'):
+            self.time = time
+
+        else:
+            self.time = time * background.units['time']
+        self._time = np.array([self.time.to(background.units['time']).value])
+
     def _value_wrap(self, r):
-        return float(self.background._value(np.array([[r,0.,0.]]).T))
+        return float(self.background._value(np.array([[r,0.,0.]]), t=self._time)[0])
 
     def _density_wrap(self, phi):
         return self.tracer(self._r_from_phi(phi))
@@ -81,7 +91,7 @@ class SphericalIsotropicDF(DF):
         """
 
         tasks = [(self,energy) for energy in E_grid]
-        results = pool.map(df_worker, tasks)
+        results = [r for r in pool.map(df_worker, tasks)]
         df = np.array(results)
 
         log_df = np.log(df / (np.sqrt(8.)*np.pi**2))

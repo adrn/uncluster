@@ -2,14 +2,10 @@
     TODO: explain
 """
 
-__author__ = "adrn <adrn@princeton.edu>"
-
 # Standard library
-from os.path import join, exists
 import sys
 
 # Third-party
-from astropy import log as logger
 from astropy.table import QTable
 import astropy.units as u
 import gala.integrate as gi
@@ -21,10 +17,11 @@ from scipy.optimize import minimize
 from schwimmbad import choose_pool
 
 # from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
+from uncluster import paths
+from uncluster.log import logger
 from uncluster.cluster_distributions.apw import sample_radii, sample_masses
-from uncluster.config import f_gc, M_tot
-
-from uncluster.config import mw_potential
+from uncluster.config import f_gc, M_tot, t_max # TODO: this doesn't make much sense anymore...
+from uncluster.potential import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
 
@@ -42,36 +39,44 @@ def v_worker(task):
     i = np.random.randint(len(vs))
     return vs[i]
 
-# TODO: specify df name at command line?
 def main(pool, df_name="sph_iso", overwrite=False):
-    from uncluster.paths import Paths
-    paths = Paths()
+    # TODO: right now df_name does nothing - specify df name at command line?
 
     # cache filenames
-    cache_path = join(paths.cache, "{}.hdf5").format(df_name)
-    interp_grid_path = join(paths.cache, "interp_grid_{}.ecsv").format(df_name)
+    cache_file_path = paths.cache / "{}.hdf5".format(df_name)
+    interp_grid_path = paths.cache / "interp_grid_{}.ecsv".format(df_name)
 
     # Now we need to evaluate the log(df) at a grid of energies so we can
     #   sample velocities.
     df = SphericalIsotropicDF(tracer=gc_prob_density,
-                              background=mw_potential)
-    if not exists(interp_grid_path) or overwrite:
+                              background=mw_potential,
+                              time=t_max)
+
+    # The first thing we need to do is generate a grid of energy values and compute
+    #   the value of the DF at these energies. We can than use inverse-transform
+    #   sampling to sample energies from the DF to generate initial conditions.
+    if not interp_grid_path.exists() or overwrite:
+        logger.debug("DF interpolation grid file not found or overwriting at: {}"
+                     .format(str(interp_grid_path)))
+
         # generate a grid of energies to evaluate the DF on
         n_grid = 1024 # MAGIC NUMBER
         r = np.array([[1E-4,0,0],
                       [1E3,0,0]]).T * u.kpc
-        v = mw_potential.circular_velocity(r)
-        E_min = mw_potential.value(r[:,0]).decompose(galactic).value[0]
-        E_max = (mw_potential.value(r[:,1]) + 0.5*v[1]**2).decompose(galactic).value[0]
+        v = mw_potential.circular_velocity(r, t=t_max)
+        E_min = mw_potential.value(r[:,0], t=t_max).decompose(galactic).value[0]
+        E_max = (mw_potential.value(r[:,1], t=t_max) + 0.5*v[1]**2).decompose(galactic).value[0]
         E_grid = np.linspace(E_min, E_max, n_grid)
 
         df.compute_ln_df_grid(E_grid, pool)
 
         tbl = QTable({'energy': df._energy_grid * galactic['energy']/galactic['mass'],
                       'log_df': df._log_df_grid})
-        tbl.write(interp_grid_path, format='ascii.ecsv')
+        tbl.write(str(interp_grid_path), format='ascii.ecsv')
 
     else:
+        logger.debug("DF interpolation grid file already exists - reading in")
+
         # interpolation grid already cached
         tbl = QTable.read(str(interp_grid_path), format='ascii.ecsv')
         energy_grid = tbl['energy'].decompose(galactic).value
@@ -79,18 +84,23 @@ def main(pool, df_name="sph_iso", overwrite=False):
 
         df.make_ln_df_interp_func(energy_grid, log_df_grid)
 
-    if exists(cache_path):
-        with h5py.File(cache_path, 'r') as f:
+    # For now, just make the interpolation grid
+    return
+
+    if cache_file_path.exists():
+        with h5py.File(cache_file_path, 'r') as f:
             if 'cluster_properties' in f and not overwrite:
                 logger.info("Cache file {} already contains results. Use --overwrite "
-                            "to overwrite.".format(cache_path))
+                            "to overwrite.".format(cache_file_path))
                 pool.close()
                 sys.exit(0)
+
     else:
-        with h5py.File(cache_path, 'w') as f:
+        with h5py.File(cache_file_path, 'w') as f:
             pass
 
-    # - Sample masses until the total mass in GCs is equal to a fraction (f_gc) of the
+    # TODO: I'll probably want to change this...
+    # Sample masses until the total mass in GCs is equal to a fraction (f_gc) of the
     #   total mass in stars (M_tot):
     maxiter = 64000 # MAGIC NUMBER
     gc_mass = sample_masses(size=maxiter)
@@ -112,7 +122,6 @@ def main(pool, df_name="sph_iso", overwrite=False):
     n_samples = 100
     tasks = [(df,r,n_samples) for r in gc_radius.decompose(galactic).value]
 
-    # TODO: something is broken in pool.map() that this doesn't work...
     results = [r for r in pool.map(v_worker, tasks)]
     v_mag = np.array(results) * u.kpc/u.Myr
 

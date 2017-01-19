@@ -35,7 +35,7 @@ def gc_prob_density(r):
         Radius in kpc.
 
     """
-    return _hernquist.c_instance.density(np.array([[r,0,0]]))[0]
+    return _hernquist.c_instance.density(np.array([[r,0,0]]), np.array([0.]))[0]
 
 def sample_radii(r_min=0, r_max=np.inf, size=1):
     """
@@ -53,7 +53,8 @@ def sample_radii(r_min=0, r_max=np.inf, size=1):
 
     """
     Menc = lambda r: _hernquist.c_instance.mass_enclosed(np.array([[r,0,0]]),
-                                                         G=_hernquist.G)[0]
+                                                         G=_hernquist.G,
+                                                         t=np.array([0.]))[0]
 
     def root_func(r, m):
         return (m - Menc(float(r)))
