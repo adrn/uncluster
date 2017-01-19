@@ -5,4 +5,5 @@ if not _ASTROPY_SETUP_:
     from . import config
     from . import cluster_distributions
     from . import cluster_massloss
-    from . import paths
+    from .paths import Paths
+    paths = Paths()
