@@ -9,12 +9,15 @@
 
 """
 
+# TODO: turn print statements into log statements
+
 # Standard library
 from os.path import exists, abspath, join
 
 # Third-party
 import astropy.cosmology as ac
 from astropy.constants import G
+from astropy.table import Table
 import astropy.units as u
 import matplotlib.pyplot as plt
 import numpy as np
@@ -88,6 +91,9 @@ def main(plot=False):
     obs_Menc_err = Menc_err[idx][2:]
     obs_r = r[idx][2:]
 
+    tbl = Table(dict(r=obs_r, Menc=obs_Menc, Menc_err=obs_Menc_err))
+    tbl.write(join(data_path, 'apw_menc.txt'), format='csv')
+
     # Initial guess for the parameters:
     x0 = [np.log(6E11), np.log(20.), np.log(2E9), np.log(100.)] # a is in pc
     init_pot = get_potential(*x0)
@@ -140,7 +146,7 @@ def main(plot=False):
 
     lines = []
     lines.append("# vvv --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- vvv\n")
-    lines.append("import astropy.units as u")
+    lines.append("import astropy.units as u\n")
     lines.append("m_h = {:.2e} * u.Msun\n".format(m_h))
     lines.append("r_s = {:.2f} * u.kpc\n".format(r_s))
     lines.append("m_n = {:.2e} * u.Msun\n".format(m_n))
