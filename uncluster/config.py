@@ -17,4 +17,4 @@ M_tot = 5E10 * u.Msun
 
 # amount of time to evolve clusters
 z_max = 3.
-t_max = cosmology.lookback_time(z_max)
+t_max = -cosmology.lookback_time(z_max)
