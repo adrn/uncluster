@@ -15,12 +15,13 @@ import numpy as np
 from schwimmbad import choose_pool
 
 # from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
-from uncluster import paths
 from uncluster.log import logger
 from uncluster.config import t_max
 from uncluster.potential import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
+from uncluster.paths import Paths
+paths = Paths()
 
 def main(pool, df_name="sph_iso", overwrite=False):
     # TODO: right now df_name does nothing - specify df name at command line?

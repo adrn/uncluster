@@ -19,6 +19,7 @@ __author__ = "adrn <adrn@astro.columbia.edu>"
 # Standard library
 from os.path import join, exists
 import sys
+from pathlib import Path
 
 # Third-party
 from astropy import log as logger
@@ -32,10 +33,12 @@ import numpy as np
 from scipy.interpolate import interp1d
 from schwimmbad import choose_pool
 
-from uncluster.config import t_evolve, mw_potential
-from uncluster.cluster_massloss import solve_mass_radius
-
-# TODO: t_evolve shouldn't be set in config?
+# Project
+from uncluster.config import t_max
+from uncluster.potential import mw_potential
+from uncluster.cluster_massloss import solve_mass_evolution
+from uncluster.paths import Paths
+paths = Paths()
 
 class MockStreamWorker(object):
 
@@ -45,40 +48,38 @@ class MockStreamWorker(object):
         self.overwrite = overwrite
         self.release_every = release_every
 
-    def work(self, i, initial_mass, initial_radius, circularity, w0, dt):
+    def work(self, i, initial_mass, w0, dt):
 
-        with h5py.File(self.cache_file, 'r') as root:
+        with h5py.File(str(self.cache_file), 'r') as root:
             if str(i) in root['mock_streams'] and not self.overwrite:
                 logger.debug("Cluster {} already done.".format(i))
                 return
 
-        logger.debug("Cluster {} initial mass, radius = ({:.0e}, {:.2f})"
-                     .format(i, initial_mass, initial_radius))
+        logger.debug("Cluster {} initial mass = {:.0e} Msun"
+                     .format(i, initial_mass))
+
+        # TODO: integrate orbit
+        gc_orbit = mw_potential.integrate_orbit(w0, dt=dt,
+                                                t1=t_max, t2=0.,
+                                                Integrator=gi.DOPRI853Integrator)
+        logger.debug("\t Orbit integrated for {} steps".format(len(gc_orbit.t)))
+
+        t_grid = gc_orbit.t.to(u.Gyr).value
+        r_grid = gc_orbit.r.to(u.kpc).value
 
         # solve dM/dt to get mass-loss history
         try:
-            idx, m, r = solve_mass_radius(initial_mass, initial_radius,
-                                          circularity, self.t_grid/1000.) # Myr to Gyr
+            disrupt_idx, mass_grid = solve_mass_evolution(initial_mass, t_grid, r_grid)
         except:
             logger.error("Failed to solve for mass-loss history for cluster {}: \n\t {}"
                          .format(i, sys.exc_info()[0]))
             return
 
-        # solve_mass_radius always returns arrays?
-        disrupt_idx = idx[0]
-        mass_grid = m[0]
-        # r, ignore dynamical friction right now
-
         # set disruption time to NaN for those that don't disrupt
         t_disrupt = self.t_grid[disrupt_idx+1]
-        if (t_disrupt == t_evolve.to(u.Myr).value) | (t_disrupt == 0):
-            t_disrupt = np.nan # didn't disrupt
-
-        gc_orbit = mw_potential.integrate_orbit(w0, dt=dt,
-                                                t1=0.*u.Gyr, t2=11.5*u.Gyr, # TODO: hard-coded!!
-                                                Integrator=gi.DOPRI853Integrator)
-
-        logger.debug("Orbit integrated for {} steps".format(len(gc_orbit.t)))
+        # if (t_disrupt == .to(u.Myr).value) | (t_disrupt == 0):
+        #     t_disrupt = np.nan # didn't disrupt
+        logger.debug("\t Cluster disrupted at: {}".format(t_disrupt))
 
         # don't make a stream if its final radius is outside of the virial radius
         if np.sqrt(np.sum(gc_orbit.pos[:,-1]**2)) > 500*u.kpc:
@@ -90,11 +91,13 @@ class MockStreamWorker(object):
             return
 
         # orbit has different times than mass_grid
+        # TODO: no longer true!
         mass_interp_func = interp1d(self.t_grid, mass_grid, fill_value='extrapolate')
         m_t = mass_interp_func(gc_orbit.t.to(u.Myr).value)
-        m_t[m_t<=0] = 1. # HACK: can mock_stream not handle m=0?
+        m_t[m_t<=0] = 1. # Msun HACK: can mock_stream not handle m=0?
+        m_t = mass_grid
 
-        logger.debug("Generating mock stream with {} particles"
+        logger.debug("\t Generating mock stream with {} particles"
                      .format(len(gc_orbit.t)//self.release_every*2))
 
         try:
@@ -141,7 +144,7 @@ class MockStreamWorker(object):
         else:
             i, t_disrupt, stream, particle_weights = result
 
-            with h5py.File(self.cache_file, 'a') as root:
+            with h5py.File(str(self.cache_file), 'a') as root:
                 f = root['mock_streams']
 
                 if str(i) in f:
@@ -161,31 +164,24 @@ class MockStreamWorker(object):
 
 # TODO: specify df name at command line
 def main(cache_file, pool, overwrite=False):
-    from uncluster.paths import Paths
-    paths = Paths()
+    cache_file = Path(cache_file).expanduser().absolute()
 
-    if not exists(cache_file):
-        cache_file = join(paths.cache, cache_file)
-
-    if not exists(cache_file):
+    if not cache_file.exists():
         raise IOError("File '{}' does not exist -- have you run "
-                      "1-make-clusters.py?".format(cache_file))
+                      "make_clusters.py?".format(str(cache_file)))
 
     else:
-        with h5py.File(cache_file, 'r') as f:
+        with h5py.File(str(cache_file), 'r') as f:
             if 'cluster_properties' not in f:
                 raise IOError("File '{}' does not contain a 'cluster_properties' group "
-                              "-- have you run 1-make-clusters.py?".format(cache_file))
+                              "-- have you run make_clusters.py?".format(str(cache_file)))
 
     # Load the initial conditions
-    with h5py.File(cache_file, 'a') as root:
+    with h5py.File(str(cache_file), 'a') as root:
         f = root['cluster_properties']
         n_clusters = f.attrs['n']
 
         gc_masses = f['mass'][:]
-        gc_radii = np.sqrt(np.sum(f['w0_pos'][:]**2, axis=0))
-        circs = f['circularity'][:]
-
         w0 = gd.CartesianPhaseSpacePosition(pos=f['w0_pos'][:]*u.kpc,
                                             vel=f['w0_vel'][:]*u.kpc/u.Myr)
 
@@ -194,7 +190,7 @@ def main(cache_file, pool, overwrite=False):
 
     # Used to evolve the masses of the clusters by solving dM/dt using the prescription
     #   in Gnedin et al. 2014 (in worker above)
-    t_grid = np.linspace(0., t_evolve.to(u.Myr).value, 4096) # MAGIC NUMBER
+    t_grid = np.linspace(t_max.to(u.Myr).value, 0., 4096) # MAGIC NUMBER
 
     # Used for orbit integration. For now, all have same value, might want to adapt to
     #   the crossing time or something...
@@ -204,12 +200,13 @@ def main(cache_file, pool, overwrite=False):
                               cache_file=cache_file,
                               overwrite=overwrite,
                               release_every=4) # MAGIC NUMBER
-    tasks = [[i, gc_masses[i], gc_radii[i], circs[i], w0[i], dt] for i in range(n_clusters)]
+    tasks = [[i, gc_masses[i], w0[i], dt] for i in range(n_clusters)]
 
     for r in pool.map(worker, tasks, callback=worker.callback):
         pass
 
     pool.close()
+    sys.exit(0)
 
 if __name__ == '__main__':
     from argparse import ArgumentParser

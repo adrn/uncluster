@@ -17,13 +17,14 @@ from scipy.optimize import minimize
 from schwimmbad import choose_pool
 
 # from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
-from uncluster import paths
 from uncluster.log import logger
 from uncluster.cluster_distributions.apw import sample_radii, sample_masses
 from uncluster.config import f_gc, M_tot, t_max # TODO: this doesn't make much sense anymore...
 from uncluster.potential import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
+from uncluster.paths import Paths
+paths = Paths()
 
 def v_worker(task):
     df,r,n_samples = task
