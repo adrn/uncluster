@@ -19,7 +19,7 @@ from cython_gsl cimport *
 from libc.math cimport sqrt, isnan
 
 # Project
-from ..config import mw_potential as pot
+from ..potential import mw_potential as pot
 
 cdef double _NAN = float("nan")
 
