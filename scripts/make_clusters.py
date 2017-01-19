@@ -35,7 +35,8 @@ def v_worker(task):
     vs = vs[uu < np.exp(ll - ll.max())]
 
     if len(vs) <= 1:
-        raise ValueError("Rejection sampling returned <=1 samples - raise n_samples")
+        logger.warning("Rejection sampling returned <=1 samples - raise n_samples")
+        return np.nan
     i = np.random.randint(len(vs))
     return vs[i]
 
@@ -46,57 +47,33 @@ def main(pool, df_name="sph_iso", overwrite=False):
     cache_file_path = paths.cache / "{}.hdf5".format(df_name)
     interp_grid_path = paths.cache / "interp_grid_{}.ecsv".format(df_name)
 
+    if not interp_grid_path.exists():
+        raise IOError("DF interpolation grid not found at {} -- run setup_df.py first."
+                      .format(str(interp_grid_path)))
+
     # Now we need to evaluate the log(df) at a grid of energies so we can
     #   sample velocities.
     df = SphericalIsotropicDF(tracer=gc_prob_density,
                               background=mw_potential,
                               time=t_max)
 
-    # The first thing we need to do is generate a grid of energy values and compute
-    #   the value of the DF at these energies. We can than use inverse-transform
-    #   sampling to sample energies from the DF to generate initial conditions.
-    if not interp_grid_path.exists() or overwrite:
-        logger.debug("DF interpolation grid file not found or overwriting at: {}"
-                     .format(str(interp_grid_path)))
-
-        # generate a grid of energies to evaluate the DF on
-        n_grid = 1024 # MAGIC NUMBER
-        r = np.array([[1E-4,0,0],
-                      [1E3,0,0]]).T * u.kpc
-        v = mw_potential.circular_velocity(r, t=t_max)
-        E_min = mw_potential.value(r[:,0], t=t_max).decompose(galactic).value[0]
-        E_max = (mw_potential.value(r[:,1], t=t_max) + 0.5*v[1]**2).decompose(galactic).value[0]
-        E_grid = np.linspace(E_min, E_max, n_grid)
-
-        df.compute_ln_df_grid(E_grid, pool)
-
-        tbl = QTable({'energy': df._energy_grid * galactic['energy']/galactic['mass'],
-                      'log_df': df._log_df_grid})
-        tbl.write(str(interp_grid_path), format='ascii.ecsv')
-
-    else:
-        logger.debug("DF interpolation grid file already exists - reading in")
-
-        # interpolation grid already cached
-        tbl = QTable.read(str(interp_grid_path), format='ascii.ecsv')
-        energy_grid = tbl['energy'].decompose(galactic).value
-        log_df_grid = tbl['log_df']
-
-        df.make_ln_df_interp_func(energy_grid, log_df_grid)
-
-    # For now, just make the interpolation grid
-    return
+    # interpolation grid cached
+    logger.debug("Reading DF interpolation grid from {}".format(str(interp_grid_path)))
+    tbl = QTable.read(str(interp_grid_path), format='ascii.ecsv')
+    energy_grid = tbl['energy'].decompose(galactic).value
+    log_df_grid = tbl['log_df']
+    df.make_ln_df_interp_func(energy_grid, log_df_grid)
 
     if cache_file_path.exists():
-        with h5py.File(cache_file_path, 'r') as f:
+        with h5py.File(str(cache_file_path), 'r') as f:
             if 'cluster_properties' in f and not overwrite:
-                logger.info("Cache file {} already contains results. Use --overwrite "
-                            "to overwrite.".format(cache_file_path))
+                logger.info("Cache file {:} already contains results. Use --overwrite "
+                            "to overwrite.".format(str(cache_file_path)))
                 pool.close()
                 sys.exit(0)
 
     else:
-        with h5py.File(cache_file_path, 'w') as f:
+        with h5py.File(str(cache_file_path), 'w') as f:
             pass
 
     # TODO: I'll probably want to change this...
@@ -117,13 +94,17 @@ def main(pool, df_name="sph_iso", overwrite=False):
     logger.info("Sampled {} cluster masses (M_tot = {:.2e})".format(n_clusters, gc_mass.sum()))
 
     # only take radii out to ~virial radius
+    logger.debug("Sampling cluster radii...")
     gc_radius = sample_radii(r_max=250., size=n_clusters)
+    logger.debug("...done.")
 
     n_samples = 100
     tasks = [(df,r,n_samples) for r in gc_radius.decompose(galactic).value]
 
+    logger.debug("Sampling cluster velocities...")
     results = [r for r in pool.map(v_worker, tasks)]
     v_mag = np.array(results) * u.kpc/u.Myr
+    logger.debug("...done.")
 
     if np.any(np.isnan(v_mag)):
         logger.warning("Failed to find velocities for {}/{} orbits."
@@ -131,35 +112,29 @@ def main(pool, df_name="sph_iso", overwrite=False):
 
     q = np.zeros((3,n_clusters))
     q[0] = gc_radius
-    E = 0.5*v_mag**2 + mw_potential.potential(q)
+    E = 0.5*v_mag**2 + mw_potential.energy(q)
     if np.any(E.value[np.isfinite(E.value)] > 0):
         logger.warning("{} unbound orbits.".format((E > 0.).sum()))
 
     # need to turn the radius and velocity magnitude into 3D intial conditions
-    pos,vel = df.r_v_to_3d(gc_radius, v_mag)
+    pos,vel = df.r_v_to_3d(gc_radius[np.isfinite(v_mag)], v_mag[np.isfinite(v_mag)])
     w0 = gd.CartesianPhaseSpacePosition(pos=pos, vel=vel)
+
+    n_bad = np.logical_not(np.isfinite(v_mag)).sum()
+    if n_bad > 0:
+        n_clusters -= n_bad
+        logger.warning("Failed to get velocity / position for {} clusters".format(n_bad))
 
     # compute circularities and final radii for the orbits
     t_cross = gc_radius / v_mag
 
-    dt = t_cross / 256.
-    n_steps = 8192 # 32 crossing times
-
-    r_f = np.zeros_like(t_cross.value)
+    logger.debug("Computing circularities...")
     J_Jc = np.zeros_like(t_cross.value)
     for i in range(n_clusters):
-        logger.debug('Integrating {}, dt={:.3f}'.format(i, dt[i]))
-        if np.isnan(dt[i]):
-            r_f[i] = np.nan
-            continue
-
         J = np.sqrt(np.sum(w0[i].angular_momentum()**2))
-        Jc = np.sqrt(np.sum(w0[i].pos**2)) * mw_potential.circular_velocity(w0[i].pos)
+        Jc = np.sqrt(np.sum(w0[i].pos**2)) * mw_potential.circular_velocity(w0[i].pos, t=t_max)
         J_Jc[i] = (J / Jc).decompose()[0]
-
-        w = mw_potential.integrate_orbit(w0[i], dt=dt[i], n_steps=n_steps,
-                                         Integrator=gi.DOPRI853Integrator)
-        r_f[i] = np.sqrt(np.sum(w.pos[:,-1]**2)).value
+    logger.debug("...done.")
 
     idx = np.isfinite(J_Jc)
     if idx.sum() != len(idx):
@@ -169,7 +144,7 @@ def main(pool, df_name="sph_iso", overwrite=False):
     pool.close()
 
     # Write out the initial conditions and cluster properties
-    with h5py.File(cache_path, 'a') as root:
+    with h5py.File(str(cache_file_path), 'a') as root:
         f = root.create_group('cluster_properties')
         f.attrs['n'] = n_clusters
 
@@ -228,6 +203,6 @@ if __name__ == "__main__":
         np.random.seed(args.seed)
 
     pool = choose_pool(mpi=args.mpi, processes=args.n_cores)
-    logger.info("Using pool: {}".format(pool.__class__))
+    logger.debug("Using pool: {}".format(pool.__class__))
 
     main(pool=pool, overwrite=args.overwrite)
