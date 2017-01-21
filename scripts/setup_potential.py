@@ -48,7 +48,7 @@ def get_potential(log_M_h, log_r_s, log_M_n, log_a):
     return mw_potential
 
 def main(plot=False):
-    data_path = abspath("../data")
+    data_path = abspath("../uncluster/data")
     if not exists(data_path):
         raise IOError("Could not find data path -- you should run this from the "
                       "'scripts' directory.")
@@ -147,10 +147,10 @@ def main(plot=False):
     lines = []
     lines.append("# vvv --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- vvv\n")
     lines.append("import astropy.units as u\n")
-    lines.append("m_h = {:.2e} * u.Msun\n".format(m_h))
-    lines.append("r_s = {:.2f} * u.kpc\n".format(r_s))
-    lines.append("m_n = {:.2e} * u.Msun\n".format(m_n))
-    lines.append("c_n = {:.2f} * u.pc\n".format(a))
+    lines.append("m_h = {:.7e} * u.Msun\n".format(m_h))
+    lines.append("r_s = {:.7f} * u.kpc\n".format(r_s))
+    lines.append("m_n = {:.7e} * u.Msun\n".format(m_n))
+    lines.append("c_n = {:.7f} * u.pc\n".format(a))
     lines.append("# ^^^ --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- ^^^")
 
     with open(join(potential_path, "potential_config.py"), "w") as f:
@@ -164,11 +164,12 @@ def main(plot=False):
 
     # Global configuration
     M_vir0 = F(halo_concentration) * fit_potential['halo'].parameters['m']
-    print("Mvir at z=0: {:.2e} Msun".format(M_vir0))
+    print("Mvir at z=0: {:.6e} Msun".format(M_vir0))
+    print(halo_concentration, F(halo_concentration))
 
     lines = [
         '// vvv --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- vvv\n',
-        'static double const M_vir0 = {:.5e};\n'.format(M_vir0),
+        'static double const M_vir0 = {:.8e};\n'.format(M_vir0.to(u.Msun).value),
         '// ^^^ --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- ^^^'
     ]
     with open(join(potential_path, "src", "cosmo_helper.h"), "w") as f:
