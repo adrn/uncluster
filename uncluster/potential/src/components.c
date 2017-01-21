@@ -19,7 +19,9 @@ double growing_hernquist_value(double t, double *pars, double *q, int n_dim) {
     pars_t[1] = pars[1] * f_star(z);
     pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
 
-    return hernquist_value(t, pars_t, q, n_dim);
+    double val = hernquist_value(t, pars_t, q, n_dim);
+    free(pars_t);
+    return val;
 }
 
 void growing_hernquist_gradient(double t, double *pars, double *q, int n_dim, double *grad) {
@@ -36,6 +38,7 @@ void growing_hernquist_gradient(double t, double *pars, double *q, int n_dim, do
     pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
 
     hernquist_gradient(t, pars_t, q, n_dim, grad);
+    free(pars_t);
 }
 
 double growing_hernquist_density(double t, double *pars, double *q, int n_dim) {
@@ -51,7 +54,9 @@ double growing_hernquist_density(double t, double *pars, double *q, int n_dim) {
     pars_t[1] = pars[1] * f_star(z);
     pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
 
-    return hernquist_density(t, pars_t, q, n_dim);
+    double val = hernquist_density(t, pars_t, q, n_dim);
+    free(pars_t);
+    return val;
 }
 
 /* ---------------------------------------------------------------------------
@@ -71,7 +76,9 @@ double growing_miyamotonagai_value(double t, double *pars, double *q, int n_dim)
     pars_t[1] = pars[1] * f_star(z);
     pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
 
-    return miyamotonagai_value(t, pars_t, q, n_dim);
+    double val = miyamotonagai_value(t, pars_t, q, n_dim);
+    free(pars_t);
+    return val;
 }
 
 void growing_miyamotonagai_gradient(double t, double *pars, double *q, int n_dim, double *grad) {
@@ -89,6 +96,7 @@ void growing_miyamotonagai_gradient(double t, double *pars, double *q, int n_dim
     pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
 
     miyamotonagai_gradient(t, pars_t, q, n_dim, grad);
+    free(pars_t);
 }
 
 double growing_miyamotonagai_density(double t, double *pars, double *q, int n_dim) {
@@ -106,7 +114,9 @@ double growing_miyamotonagai_density(double t, double *pars, double *q, int n_di
     pars_t[1] = pars[1] * f_star(z);
     pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
 
-    return miyamotonagai_density(t, pars_t, q, n_dim);
+    double val = miyamotonagai_density(t, pars_t, q, n_dim);
+    free(pars_t);
+    return val;
 }
 
 
@@ -128,7 +138,9 @@ double growing_sphericalnfw_value(double t, double *pars, double *q, int n_dim) 
     double c = R_vir(z) / pars[2];
     pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
 
-    return sphericalnfw_value(t, pars_t, q, n_dim);
+    double val = sphericalnfw_value(t, pars_t, q, n_dim);
+    free(pars_t);
+    return val;
 }
 
 void growing_sphericalnfw_gradient(double t, double *pars, double *q, int n_dim, double *grad) {
@@ -145,6 +157,7 @@ void growing_sphericalnfw_gradient(double t, double *pars, double *q, int n_dim,
     pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
 
     sphericalnfw_gradient(t, pars_t, q, n_dim, grad);
+    free(pars_t);
 }
 
 double growing_sphericalnfw_density(double t, double *pars, double *q, int n_dim) {
@@ -160,5 +173,7 @@ double growing_sphericalnfw_density(double t, double *pars, double *q, int n_dim
     double c = R_vir(z) / pars[2];
     pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
 
-    return sphericalnfw_density(t, pars_t, q, n_dim);
+    double val = sphericalnfw_density(t, pars_t, q, n_dim);
+    free(pars_t);
+    return val;
 }
