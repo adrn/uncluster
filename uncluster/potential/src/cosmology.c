@@ -47,7 +47,8 @@ double Ode(double z) {
 
 double Delta(double z) {
     /* An approximation thanks to Dekel & Birnboim 2006 (see appendix) */
-    return (18*M_PI*M_PI - 82*Ode(z) - 39*pow(Ode(z),2)) / Om(z);
+    double _Ode = Ode(z);
+    return (18*M_PI*M_PI - 82*_Ode - 39*_Ode*_Ode) / Om(z);
 }
 
 double M_vir(double z) {
@@ -58,5 +59,5 @@ double R_vir(double z) {
     double _Delta = pow(Delta(z) / 200, -1/3.);
     double _Om = pow(Om(z) / 0.3, -1/3.);
     double _h2 = pow(_h / 0.7, -2/3.);
-    return 309. * pow(M_vir(z)/1E12,1/3.) * _Delta * _Om * _h2 / (1 + z);
+    return 309. * pow(M_vir(z)/1E12, 1/3.) * _Delta * _Om * _h2 / (1 + z);
 }

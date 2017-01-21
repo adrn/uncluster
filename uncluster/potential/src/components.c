@@ -112,6 +112,8 @@ double growing_miyamotonagai_density(double t, double *pars, double *q, int n_di
 
 /* ---------------------------------------------------------------------------
     Spherical NFW
+
+    Note: because R_vir() uses an approximation.
 */
 double growing_sphericalnfw_value(double t, double *pars, double *q, int n_dim) {
     /*  pars:
@@ -119,12 +121,11 @@ double growing_sphericalnfw_value(double t, double *pars, double *q, int n_dim) 
             - m0 - mass scale at z=0
             - rs - scale radius (constant)
     */
-    double c = R_vir(t) / pars[2];
-
     int n_pars = 3;
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
     double z = redshift(t);
+    double c = R_vir(z) / pars[2];
     pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
 
     return sphericalnfw_value(t, pars_t, q, n_dim);
@@ -136,12 +137,11 @@ void growing_sphericalnfw_gradient(double t, double *pars, double *q, int n_dim,
             - m0 - mass scale at z=0
             - rs - scale radius (constant)
     */
-    double c = R_vir(t) / pars[2];
-
     int n_pars = 3;
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
     double z = redshift(t);
+    double c = R_vir(z) / pars[2];
     pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
 
     sphericalnfw_gradient(t, pars_t, q, n_dim, grad);
@@ -153,13 +153,11 @@ double growing_sphericalnfw_density(double t, double *pars, double *q, int n_dim
             - m0 - mass scale at z=0
             - rs - scale radius (constant)
     */
-
-    double c = R_vir(t) / pars[2];
-
     int n_pars = 3;
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
     memcpy(pars_t, pars, sizeof(double)*n_pars);
     double z = redshift(t);
+    double c = R_vir(z) / pars[2];
     pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
 
     return sphericalnfw_density(t, pars_t, q, n_dim);
