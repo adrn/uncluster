@@ -65,12 +65,13 @@ class MockStreamWorker(object):
                                           Integrator=gi.DOPRI853Integrator)
         logger.debug("\t Orbit integrated for {} steps".format(len(gc_orbit.t)))
 
-        t_grid = gc_orbit.t.to(u.Gyr).value
-        r_grid = gc_orbit.r.to(u.kpc).value
+        t_grid = gc_orbit.t
+        r_grid = gc_orbit.r
 
         # solve dM/dt to get mass-loss history
         try:
-            disrupt_idx, mass_grid = solve_mass_evolution(initial_mass, t_grid, r_grid)
+            disrupt_idx, mass_grid = solve_mass_evolution(initial_mass, t_grid.to(u.Gyr).value,
+                                                          r_grid.to(u.kpc).value)
         except:
             logger.error("Failed to solve for mass-loss history for cluster {}: \n\t {}"
                          .format(i, sys.exc_info()[0]))
@@ -95,7 +96,7 @@ class MockStreamWorker(object):
 
         # orbit has different times than mass_grid
         # TODO: no longer true!
-        mass_interp_func = interp1d(t_grid, mass_grid, fill_value='extrapolate')
+        mass_interp_func = interp1d(t_grid.to(u.Myr), mass_grid, fill_value='extrapolate')
         m_t = mass_interp_func(gc_orbit.t.to(u.Myr).value)
         m_t[m_t<=0] = 1. # Msun HACK: can mock_stream not handle m=0?
         m_t = mass_grid
