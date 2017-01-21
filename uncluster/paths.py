@@ -36,7 +36,7 @@ class Paths(object):
         self.root = _find_root(Path.cwd().absolute())
 
         self.cache = self.root / "cache"
-        self.data = self.root / "data"
+        self.data = self.root / "uncluster/data"
         self.plots = self.root / "plots"
         self.figures = self.root / "paper/figures"
 
