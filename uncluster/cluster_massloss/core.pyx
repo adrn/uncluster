@@ -12,7 +12,6 @@ cimport numpy as np
 np.import_array()
 import cython
 cimport cython
-from cython_gsl cimport *
 
 from libc.math cimport sqrt, isnan
 
