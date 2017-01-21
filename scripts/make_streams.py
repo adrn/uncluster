@@ -42,12 +42,10 @@ paths = Paths()
 
 class MockStreamWorker(object):
 
-    def __init__(self, cache_file, t_grid, overwrite=False, release_every=4): # MAGIC DEFAULT
+    def __init__(self, cache_file, overwrite=False, release_every=4): # MAGIC DEFAULT
         self.cache_file = cache_file
-        self.t_grid = t_grid
         self.overwrite = overwrite
         self.release_every = release_every
-        self.H = gp.Hamiltonian(mw_potential)
 
     def work(self, i, initial_mass, w0, dt):
 
@@ -59,11 +57,11 @@ class MockStreamWorker(object):
         logger.debug("Cluster {} initial mass = {:.0e} Msun"
                      .format(i, initial_mass))
 
-        # TODO: integrate orbit
-        gc_orbit = self.H.integrate_orbit(w0, dt=dt,
-                                          t1=t_max, t2=0.,
-                                          Integrator=gi.DOPRI853Integrator)
-        logger.debug("\t Orbit integrated for {} steps".format(len(gc_orbit.t)))
+        H = gp.Hamiltonian(mw_potential)
+        gc_orbit = H.integrate_orbit(w0, dt=dt,
+                                     t1=t_max, t2=0.,
+                                     Integrator=gi.DOPRI853Integrator)
+        logger.debug("\t Orbit integrated for {} steps".format(len(gc_orbit.t)))        
 
         t_grid = gc_orbit.t
         r_grid = gc_orbit.r
@@ -192,16 +190,11 @@ def main(cache_file, pool, overwrite=False):
         if 'mock_streams' not in root:
             root.create_group('mock_streams')
 
-    # Used to evolve the masses of the clusters by solving dM/dt using the prescription
-    #   in Gnedin et al. 2014 (in worker above)
-    t_grid = np.linspace(t_max.to(u.Myr).value, 0., 4096) # MAGIC NUMBER
-
     # Used for orbit integration. For now, all have same value, might want to adapt to
     #   the crossing time or something...
     dt = 1*u.Myr
 
-    worker = MockStreamWorker(t_grid=t_grid,
-                              cache_file=cache_file,
+    worker = MockStreamWorker(cache_file=cache_file,
                               overwrite=overwrite,
                               release_every=4) # MAGIC NUMBER
     tasks = [[i, gc_masses[i], w0[i], dt] for i in range(n_clusters)]
