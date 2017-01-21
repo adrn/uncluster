@@ -12,13 +12,12 @@
 
 """
 
-from __future__ import division, print_function
-
-__author__ = "adrn <adrn@astro.columbia.edu>"
+__author__ = "adrn <adrn@astro.princeton.edu>"
 
 # Standard library
 from os.path import join, exists
 import sys
+import time
 from pathlib import Path
 
 # Third-party
@@ -79,9 +78,11 @@ class MockStreamWorker(object):
 
         # set disruption time to NaN for those that don't disrupt
         t_disrupt = t_grid[disrupt_idx+1]
-        # if (t_disrupt == .to(u.Myr).value) | (t_disrupt == 0):
-        #     t_disrupt = np.nan # didn't disrupt
-        logger.debug("\t Cluster disrupted at: {}".format(t_disrupt))
+        if (t_disrupt > -1*u.Myr):
+            t_disrupt = np.nan # didn't disrupt
+            logger.debug("\t Cluster survived!")
+        else:
+            logger.debug("\t Cluster disrupted at: {}".format(t_disrupt))
 
         # don't make a stream if its final radius is outside of the virial radius
         if np.sqrt(np.sum(gc_orbit.pos[:,-1]**2)) > 500*u.kpc:
@@ -102,15 +103,14 @@ class MockStreamWorker(object):
         logger.debug("\t Generating mock stream with {} particles over {} steps"
                      .format(len(gc_orbit.t)//self.release_every*2, len(gc_orbit.t)))
 
+        _timer0 = time.time()
         try:
             if np.isnan(t_disrupt): # cluster doesn't disrupt
-                logger.debug("\t Cluster didn't disrupt")
                 stream = fardal_stream(self.H, gc_orbit, m_t*u.Msun,
                                        release_every=self.release_every,
                                        Integrator=gi.DOPRI853Integrator)
 
             else: # cluster disrupts completely
-                logger.debug("\t Cluster fully disrupted at {}".format(t_disrupt*u.Myr))
                 stream = dissolved_fardal_stream(self.H, gc_orbit, m_t*u.Msun,
                                                  t_disrupt*u.Myr, release_every=self.release_every,
                                                  Integrator=gi.DOPRI853Integrator)
@@ -119,13 +119,8 @@ class MockStreamWorker(object):
                          .format(i, sys.exc_info()[0]))
             return
 
-        logger.debug("\t ...done generating mock stream.")
-
-        stream.plot()
-        import matplotlib.pyplot as plt
-        plt.show()
-
-        sys.exit(0)
+        logger.debug("\t ...done generating mock stream ({:.2f} seconds)."
+                     .format(time.time()-_timer0))
 
         release_time = np.vstack((gc_orbit.t[::self.release_every].to(u.Myr).value,
                                   gc_orbit.t[::self.release_every].to(u.Myr).value)).T.ravel()
@@ -207,8 +202,8 @@ def main(cache_file, pool, overwrite=False):
     worker = MockStreamWorker(t_grid=t_grid,
                               cache_file=cache_file,
                               overwrite=overwrite,
-                              release_every=16) # MAGIC NUMBER
-    tasks = [[i, gc_masses[i], w0[i], dt] for i in range(n_clusters)]
+                              release_every=4) # MAGIC NUMBER
+    tasks = [[i, gc_masses[i], w0[i], dt] for i in range(1,n_clusters)]
 
     for r in pool.map(worker, tasks, callback=worker.callback):
         pass
