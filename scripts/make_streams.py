@@ -113,7 +113,7 @@ class MockStreamWorker(object):
 
             else: # cluster disrupts completely
                 stream = dissolved_fardal_stream(self.H, gc_orbit, m_t*u.Msun,
-                                                 t_disrupt*u.Myr, release_every=self.release_every,
+                                                 t_disrupt, release_every=self.release_every,
                                                  Integrator=gi.DOPRI853Integrator)
         except:
             logger.error("\t Failed to generate mock stream for cluster {}: \n\t {}"
