@@ -204,7 +204,7 @@ def main(cache_file, pool, overwrite=False):
                               cache_file=cache_file,
                               overwrite=overwrite,
                               release_every=4) # MAGIC NUMBER
-    tasks = [[i, gc_masses[i], w0[i], dt] for i in range(1,n_clusters)]
+    tasks = [[i, gc_masses[i], w0[i], dt] for i in range(n_clusters)]
 
     for r in pool.map(worker, tasks, callback=worker.callback):
         pass
