@@ -61,7 +61,7 @@ class MockStreamWorker(object):
         gc_orbit = H.integrate_orbit(w0, dt=dt,
                                      t1=t_max, t2=0.,
                                      Integrator=gi.DOPRI853Integrator)
-        logger.debug("\t Orbit integrated for {} steps".format(len(gc_orbit.t)))        
+        logger.debug("\t Orbit integrated for {} steps".format(len(gc_orbit.t)))
 
         t_grid = gc_orbit.t
         r_grid = gc_orbit.r
@@ -78,7 +78,7 @@ class MockStreamWorker(object):
         # set disruption time to NaN for those that don't disrupt
         t_disrupt = t_grid[disrupt_idx+1]
         if (t_disrupt > -1*u.Myr):
-            t_disrupt = np.nan # didn't disrupt
+            t_disrupt = np.nan*u.Myr # didn't disrupt
             logger.debug("\t Cluster survived!")
         else:
             logger.debug("\t Cluster disrupted at: {}".format(t_disrupt))
@@ -97,7 +97,6 @@ class MockStreamWorker(object):
         mass_interp_func = interp1d(t_grid.to(u.Myr), mass_grid, fill_value='extrapolate')
         m_t = mass_interp_func(gc_orbit.t.to(u.Myr).value)
         m_t[m_t<=0] = 1. # Msun HACK: can mock_stream not handle m=0?
-        m_t = mass_grid
 
         logger.debug("\t Generating mock stream with {} particles over {} steps"
                      .format(len(gc_orbit.t)//self.release_every*2, len(gc_orbit.t)))
@@ -105,12 +104,12 @@ class MockStreamWorker(object):
         _timer0 = time.time()
         try:
             if np.isnan(t_disrupt): # cluster doesn't disrupt
-                stream = fardal_stream(self.H, gc_orbit, m_t*u.Msun,
+                stream = fardal_stream(H, gc_orbit, m_t*u.Msun,
                                        release_every=self.release_every,
                                        Integrator=gi.DOPRI853Integrator)
 
             else: # cluster disrupts completely
-                stream = dissolved_fardal_stream(self.H, gc_orbit, m_t*u.Msun,
+                stream = dissolved_fardal_stream(H, gc_orbit, m_t*u.Msun,
                                                  t_disrupt, release_every=self.release_every,
                                                  Integrator=gi.DOPRI853Integrator)
         except:
@@ -123,7 +122,7 @@ class MockStreamWorker(object):
 
         release_time = np.vstack((gc_orbit.t[::self.release_every].to(u.Myr).value,
                                   gc_orbit.t[::self.release_every].to(u.Myr).value)).T.ravel()
-        idx = (release_time*u.Myr) < (t_disrupt*u.Myr)
+        idx = (release_time*u.Myr) < t_disrupt
 
         # get dm/dt at each release_time
         h = dt.to(u.Myr).value
@@ -134,7 +133,7 @@ class MockStreamWorker(object):
         # can weight each particle by release_times * (dm/dt) -- the amount of mass in that particle
         particle_weights = -dM_dt * release_time_dt * 0.5 # mass lost split btwn L pts
 
-        return i, t_disrupt, stream[idx], particle_weights[idx]
+        return i, t_disrupt.to(u.Myr).value, stream[idx], particle_weights[idx]
 
     def __call__(self, args):
         return self.work(*args)
@@ -196,7 +195,7 @@ def main(cache_file, pool, overwrite=False):
 
     worker = MockStreamWorker(cache_file=cache_file,
                               overwrite=overwrite,
-                              release_every=4) # MAGIC NUMBER
+                              release_every=64) # MAGIC NUMBER
     tasks = [[i, gc_masses[i], w0[i], dt] for i in range(n_clusters)]
 
     for r in pool.map(worker, tasks, callback=worker.callback):
