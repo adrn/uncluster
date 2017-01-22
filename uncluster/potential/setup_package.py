@@ -24,12 +24,22 @@ def get_extensions():
     cfg['sources'].append('uncluster/potential/components.pyx')
     cfg['sources'].append(os.path.join(gala_potential_incl, 'potential/builtin/builtin_potentials.c'))
     cfg['sources'].append('uncluster/potential/src/components.c')
-    cfg['libraries'] = ['gsl', 'gslcblas']
+    cfg['sources'].append('uncluster/potential/src/cosmology.c')
     exts.append(Extension('uncluster.potential.components', **cfg))
+
+    # Test helpers for cosmology functions
+    cfg = setup_helpers.DistutilsExtensionArgs()
+    cfg['include_dirs'].append('numpy')
+    cfg['include_dirs'].append(mac_incl_path)
+    cfg['include_dirs'].append(gala_potential_incl)
+    cfg['extra_compile_args'].append('--std=gnu99')
+    cfg['sources'].append('uncluster/potential/tests/helpers.pyx')
+    cfg['sources'].append('uncluster/potential/src/cosmology.c')
+    exts.append(Extension('uncluster.potential.tests.helpers', **cfg))
 
     return exts
 
 def get_package_data():
     return {'uncluster.potential':
             ['*.h', '*.pyx', '*.pxd',
-             'src/components.h', 'src/components.c', 'src/*.h']}
+             'src/*.c', 'src/*.h']}

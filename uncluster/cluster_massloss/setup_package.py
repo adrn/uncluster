@@ -13,7 +13,7 @@ def get_extensions():
     cfg['include_dirs'].append(mac_incl_path)
     cfg['extra_compile_args'].append('--std=gnu99')
     cfg['sources'].append('uncluster/cluster_massloss/core.pyx')
-    cfg['libraries'] = ['gsl', 'gslcblas']
+    # cfg['libraries'] = ['gsl', 'gslcblas']
     exts.append(Extension('uncluster.cluster_massloss.core', **cfg))
 
     return exts

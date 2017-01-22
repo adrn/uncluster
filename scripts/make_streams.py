@@ -12,13 +12,12 @@
 
 """
 
-from __future__ import division, print_function
-
-__author__ = "adrn <adrn@astro.columbia.edu>"
+__author__ = "adrn <adrn@astro.princeton.edu>"
 
 # Standard library
 from os.path import join, exists
 import sys
+import time
 from pathlib import Path
 
 # Third-party
@@ -43,12 +42,10 @@ paths = Paths()
 
 class MockStreamWorker(object):
 
-    def __init__(self, cache_file, t_grid, overwrite=False, release_every=4): # MAGIC DEFAULT
+    def __init__(self, cache_file, overwrite=False, release_every=4): # MAGIC DEFAULT
         self.cache_file = cache_file
-        self.t_grid = t_grid
         self.overwrite = overwrite
         self.release_every = release_every
-        self.H = gp.Hamiltonian(mw_potential)
 
     def work(self, i, initial_mass, w0, dt):
 
@@ -60,18 +57,19 @@ class MockStreamWorker(object):
         logger.debug("Cluster {} initial mass = {:.0e} Msun"
                      .format(i, initial_mass))
 
-        # TODO: integrate orbit
-        gc_orbit = self.H.integrate_orbit(w0, dt=dt,
-                                          t1=t_max, t2=0.,
-                                          Integrator=gi.DOPRI853Integrator)
+        H = gp.Hamiltonian(mw_potential)
+        gc_orbit = H.integrate_orbit(w0, dt=dt,
+                                     t1=t_max, t2=0.,
+                                     Integrator=gi.DOPRI853Integrator)
         logger.debug("\t Orbit integrated for {} steps".format(len(gc_orbit.t)))
 
-        t_grid = gc_orbit.t.to(u.Gyr).value
-        r_grid = gc_orbit.r.to(u.kpc).value
+        t_grid = gc_orbit.t
+        r_grid = gc_orbit.r
 
         # solve dM/dt to get mass-loss history
         try:
-            disrupt_idx, mass_grid = solve_mass_evolution(initial_mass, t_grid, r_grid)
+            disrupt_idx, mass_grid = solve_mass_evolution(initial_mass, t_grid.to(u.Gyr).value,
+                                                          r_grid.to(u.kpc).value)
         except:
             logger.error("Failed to solve for mass-loss history for cluster {}: \n\t {}"
                          .format(i, sys.exc_info()[0]))
@@ -79,9 +77,11 @@ class MockStreamWorker(object):
 
         # set disruption time to NaN for those that don't disrupt
         t_disrupt = t_grid[disrupt_idx+1]
-        # if (t_disrupt == .to(u.Myr).value) | (t_disrupt == 0):
-        #     t_disrupt = np.nan # didn't disrupt
-        logger.debug("\t Cluster disrupted at: {}".format(t_disrupt))
+        if (t_disrupt > -1*u.Myr):
+            t_disrupt = np.nan*u.Myr # didn't disrupt
+            logger.debug("\t Cluster survived!")
+        else:
+            logger.debug("\t Cluster disrupted at: {}".format(t_disrupt))
 
         # don't make a stream if its final radius is outside of the virial radius
         if np.sqrt(np.sum(gc_orbit.pos[:,-1]**2)) > 500*u.kpc:
@@ -94,42 +94,35 @@ class MockStreamWorker(object):
 
         # orbit has different times than mass_grid
         # TODO: no longer true!
-        mass_interp_func = interp1d(t_grid, mass_grid, fill_value='extrapolate')
+        mass_interp_func = interp1d(t_grid.to(u.Myr), mass_grid, fill_value='extrapolate')
         m_t = mass_interp_func(gc_orbit.t.to(u.Myr).value)
         m_t[m_t<=0] = 1. # Msun HACK: can mock_stream not handle m=0?
-        m_t = mass_grid
 
         logger.debug("\t Generating mock stream with {} particles over {} steps"
                      .format(len(gc_orbit.t)//self.release_every*2, len(gc_orbit.t)))
 
+        _timer0 = time.time()
         try:
             if np.isnan(t_disrupt): # cluster doesn't disrupt
-                logger.debug("\t Cluster didn't disrupt")
-                stream = fardal_stream(self.H, gc_orbit, m_t*u.Msun,
+                stream = fardal_stream(H, gc_orbit, m_t*u.Msun,
                                        release_every=self.release_every,
                                        Integrator=gi.DOPRI853Integrator)
 
             else: # cluster disrupts completely
-                logger.debug("\t Cluster fully disrupted at {}".format(t_disrupt*u.Myr))
-                stream = dissolved_fardal_stream(self.H, gc_orbit, m_t*u.Msun,
-                                                 t_disrupt*u.Myr, release_every=self.release_every,
+                stream = dissolved_fardal_stream(H, gc_orbit, m_t*u.Msun,
+                                                 t_disrupt, release_every=self.release_every,
                                                  Integrator=gi.DOPRI853Integrator)
         except:
             logger.error("\t Failed to generate mock stream for cluster {}: \n\t {}"
                          .format(i, sys.exc_info()[0]))
             return
 
-        logger.debug("\t ...done generating mock stream.")
-
-        stream.plot()
-        import matplotlib.pyplot as plt
-        plt.show()
-
-        sys.exit(0)
+        logger.debug("\t ...done generating mock stream ({:.2f} seconds)."
+                     .format(time.time()-_timer0))
 
         release_time = np.vstack((gc_orbit.t[::self.release_every].to(u.Myr).value,
                                   gc_orbit.t[::self.release_every].to(u.Myr).value)).T.ravel()
-        idx = (release_time*u.Myr) < (t_disrupt*u.Myr)
+        idx = (release_time*u.Myr) < t_disrupt
 
         # get dm/dt at each release_time
         h = dt.to(u.Myr).value
@@ -140,7 +133,7 @@ class MockStreamWorker(object):
         # can weight each particle by release_times * (dm/dt) -- the amount of mass in that particle
         particle_weights = -dM_dt * release_time_dt * 0.5 # mass lost split btwn L pts
 
-        return i, t_disrupt, stream[idx], particle_weights[idx]
+        return i, t_disrupt.to(u.Myr).value, stream[idx], particle_weights[idx]
 
     def __call__(self, args):
         return self.work(*args)
@@ -196,18 +189,13 @@ def main(cache_file, pool, overwrite=False):
         if 'mock_streams' not in root:
             root.create_group('mock_streams')
 
-    # Used to evolve the masses of the clusters by solving dM/dt using the prescription
-    #   in Gnedin et al. 2014 (in worker above)
-    t_grid = np.linspace(t_max.to(u.Myr).value, 0., 4096) # MAGIC NUMBER
-
     # Used for orbit integration. For now, all have same value, might want to adapt to
     #   the crossing time or something...
     dt = 1*u.Myr
 
-    worker = MockStreamWorker(t_grid=t_grid,
-                              cache_file=cache_file,
+    worker = MockStreamWorker(cache_file=cache_file,
                               overwrite=overwrite,
-                              release_every=16) # MAGIC NUMBER
+                              release_every=64) # MAGIC NUMBER
     tasks = [[i, gc_masses[i], w0[i], dt] for i in range(n_clusters)]
 
     for r in pool.map(worker, tasks, callback=worker.callback):
