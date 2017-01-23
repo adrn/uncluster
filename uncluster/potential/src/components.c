@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <potential/builtin/builtin_potentials.h>
+#include "components.h"
 #include "cosmology.h"
 
 // TODO: make this a PR, note so slow, remove most of this shite and define
@@ -14,196 +15,125 @@ double growing_milkyway_value(double t, double *pars, double *q, int n_dim) {
             - m_h0 - halo mass scale at z=0
             - r_s - halo scale radius (fixed)
     */
+    double val = 0;
     double z = redshift(t);
+    double f_starz = f_star(z);
+    double R_virz = R_vir(z);
+    double R_vir_frac = R_virz / R_vir(0);
 
-    int n_pars = 3;// 3 parameters for each
+    int n_pars = 4;// max num of params is 4 (for Miyamoto-Nagai)
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
 
-    pars_t[1] = pars[1] * f_star(z);
-    pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
+    // Bulge
+    pars_t[0] = pars[0]; // G
+    pars_t[1] = bulge_pars[1] * f_starz;
+    pars_t[2] = bulge_pars[2] * R_vir_frac;
+    val = val + hernquist_value(t, pars_t, q, n_dim);
 
-    double val = hernquist_value(t, pars_t, q, n_dim);
+    // Disk
+    pars_t[1] = disk_pars[1] * f_starz;
+    pars_t[2] = disk_pars[2] * R_vir_frac;
+    pars_t[3] = disk_pars[3]; // scale-height time independent
+    val = val + miyamotonagai_value(t, pars_t, q, n_dim);
+
+    // Nucleus
+    pars_t[1] = pars[1] * f_starz;
+    pars_t[2] = pars[2] * R_vir_frac;
+    val = val + hernquist_value(t, pars_t, q, n_dim); // nucleus
+
+    // Halo
+    double c = R_virz / pars[4];
+    pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
+    pars_t[2] = pars[4]; // NFW scale radius time independent
+    val = val + sphericalnfw_value(t, pars_t, q, n_dim); // nucleus
+
     free(pars_t);
     return val;
 }
 
-
-/* ===========================================================================
-    The stuff below is too slow for generating mock streams because the
-    cosmological functions are evaluated 4 times per gradient call!
-*/
-
-/* ---------------------------------------------------------------------------
-    Hernquist sphere
-*/
-double growing_hernquist_value(double t, double *pars, double *q, int n_dim) {
+void growing_milkyway_gradient(double t, double *pars, double *q, int n_dim, double *grad) {
     /*  pars:
             - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - c0 - length scale at z=0
+            - m_n0 - nucleus mass scale at z=0
+            - c0 - nucleus scale radius at z=0
+            - m_h0 - halo mass scale at z=0
+            - r_s - halo scale radius (fixed)
     */
-    int n_pars = 3;// 3 parameters
-    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
+    double val = 0;
     double z = redshift(t);
-    pars_t[1] = pars[1] * f_star(z);
-    pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
+    double f_starz = f_star(z);
+    double R_virz = R_vir(z);
+    double R_vir_frac = R_virz / R_vir(0);
 
-    double val = hernquist_value(t, pars_t, q, n_dim);
-    free(pars_t);
-    return val;
-}
-
-void growing_hernquist_gradient(double t, double *pars, double *q, int n_dim, double *grad) {
-    /*  pars:
-            - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - c0 - length scale at z=0
-    */
-    int n_pars = 3;// 3 parameters
+    int n_pars = 4;// max num of params is 4 (for Miyamoto-Nagai) - others will ignore
     double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
-    double z = redshift(t);
-    pars_t[1] = pars[1] * f_star(z);
-    pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
 
+    // Bulge
+    pars_t[0] = pars[0]; // G
+    pars_t[1] = bulge_pars[1] * f_starz;
+    pars_t[2] = bulge_pars[2] * R_vir_frac;
     hernquist_gradient(t, pars_t, q, n_dim, grad);
-    free(pars_t);
-}
 
-double growing_hernquist_density(double t, double *pars, double *q, int n_dim) {
-    /*  pars:
-            - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - c0 - length scale at z=0
-    */
-    int n_pars = 3;// 3 parameters
-    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
-    double z = redshift(t);
-    pars_t[1] = pars[1] * f_star(z);
-    pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
-
-    double val = hernquist_density(t, pars_t, q, n_dim);
-    free(pars_t);
-    return val;
-}
-
-/* ---------------------------------------------------------------------------
-    Miyamoto-Nagai flattened potential
-*/
-double growing_miyamotonagai_value(double t, double *pars, double *q, int n_dim) {
-    /*  pars:
-            - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - a0 - radial scale length at z=0
-            - b - vertical scale length (constant)
-    */
-    int n_pars = 4;
-    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
-    double z = redshift(t);
-    pars_t[1] = pars[1] * f_star(z);
-    pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
-
-    double val = miyamotonagai_value(t, pars_t, q, n_dim);
-    free(pars_t);
-    return val;
-}
-
-void growing_miyamotonagai_gradient(double t, double *pars, double *q, int n_dim, double *grad) {
-    /*  pars:
-            - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - a0 - radial scale length at z=0
-            - b - vertical scale length (constant)
-    */
-    int n_pars = 4;
-    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
-    double z = redshift(t);
-    pars_t[1] = pars[1] * f_star(z);
-    pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
-
+    // Disk
+    pars_t[1] = disk_pars[1] * f_starz;
+    pars_t[2] = disk_pars[2] * R_vir_frac;
+    pars_t[3] = disk_pars[3]; // scale-height time independent
     miyamotonagai_gradient(t, pars_t, q, n_dim, grad);
-    free(pars_t);
-}
 
-double growing_miyamotonagai_density(double t, double *pars, double *q, int n_dim) {
-    /*  pars:
-            - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - a0 - radial scale length at z=0
-            - b - vertical scale length (constant)
-    */
+    // Nucleus
+    pars_t[1] = pars[1] * f_starz;
+    pars_t[2] = pars[2] * R_vir_frac;
+    hernquist_gradient(t, pars_t, q, n_dim, grad); // nucleus
 
-    int n_pars = 4;
-    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
-    double z = redshift(t);
-    pars_t[1] = pars[1] * f_star(z);
-    pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
-
-    double val = miyamotonagai_density(t, pars_t, q, n_dim);
-    free(pars_t);
-    return val;
-}
-
-
-/* ---------------------------------------------------------------------------
-    Spherical NFW
-
-    Note: because R_vir() uses an approximation.
-*/
-double growing_sphericalnfw_value(double t, double *pars, double *q, int n_dim) {
-    /*  pars:
-            - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - rs - scale radius (constant)
-    */
-    int n_pars = 3;
-    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
-    double z = redshift(t);
-    double c = R_vir(z) / pars[2];
+    // Halo
+    double c = R_virz / pars[4];
     pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
+    pars_t[2] = pars[4]; // NFW scale radius time independent
+    sphericalnfw_gradient(t, pars_t, q, n_dim, grad); // nucleus
 
-    double val = sphericalnfw_value(t, pars_t, q, n_dim);
-    free(pars_t);
-    return val;
-}
-
-void growing_sphericalnfw_gradient(double t, double *pars, double *q, int n_dim, double *grad) {
-    /*  pars:
-            - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - rs - scale radius (constant)
-    */
-    int n_pars = 3;
-    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
-    double z = redshift(t);
-    double c = R_vir(z) / pars[2];
-    pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
-
-    sphericalnfw_gradient(t, pars_t, q, n_dim, grad);
     free(pars_t);
 }
 
-double growing_sphericalnfw_density(double t, double *pars, double *q, int n_dim) {
+double growing_milkyway_density(double t, double *pars, double *q, int n_dim) {
     /*  pars:
             - G - Gravitational constant
-            - m0 - mass scale at z=0
-            - rs - scale radius (constant)
+            - m_n0 - nucleus mass scale at z=0
+            - c0 - nucleus scale radius at z=0
+            - m_h0 - halo mass scale at z=0
+            - r_s - halo scale radius (fixed)
     */
-    int n_pars = 3;
-    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
-    memcpy(pars_t, pars, sizeof(double)*n_pars);
+    double val = 0;
     double z = redshift(t);
-    double c = R_vir(z) / pars[2];
-    pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
+    double f_starz = f_star(z);
+    double R_virz = R_vir(z);
+    double R_vir_frac = R_virz / R_vir(0);
 
-    double val = sphericalnfw_density(t, pars_t, q, n_dim);
+    int n_pars = 4;// max num of params is 4 (for Miyamoto-Nagai)
+    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
+
+    // Bulge
+    pars_t[0] = pars[0]; // G
+    pars_t[1] = bulge_pars[1] * f_starz;
+    pars_t[2] = bulge_pars[2] * R_vir_frac;
+    val = val + hernquist_density(t, pars_t, q, n_dim);
+
+    // Disk
+    pars_t[1] = disk_pars[1] * f_starz;
+    pars_t[2] = disk_pars[2] * R_vir_frac;
+    pars_t[3] = disk_pars[3]; // scale-height time independent
+    val = val + miyamotonagai_density(t, pars_t, q, n_dim);
+
+    // Nucleus
+    pars_t[1] = pars[1] * f_starz;
+    pars_t[2] = pars[2] * R_vir_frac;
+    val = val + hernquist_density(t, pars_t, q, n_dim); // nucleus
+
+    // Halo
+    double c = R_virz / pars[4];
+    pars_t[1] = M_vir(z) / (log(c+1) - c/(c+1));
+    pars_t[2] = pars[4]; // NFW scale radius time independent
+    val = val + sphericalnfw_density(t, pars_t, q, n_dim); // nucleus
+
     free(pars_t);
     return val;
 }

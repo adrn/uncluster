@@ -18,9 +18,6 @@ cdef extern from "../src/cosmology.h":
     double redshift(double t_lb) nogil
     double nu_relative_density(double z) nogil
     double inv_efunc_sq(double z) nogil
-    double Om(double z) nogil
-    double Ode(double z) nogil
-    double Delta(double z) nogil
     double M_vir(double z) nogil
     double R_vir(double z) nogil
 
@@ -71,30 +68,6 @@ cpdef _inv_efunc_sq(z):
 
     for i in range(n):
         arr[i] = inv_efunc_sq(_z[i])
-
-    return np.array(arr)
-
-cpdef _Om(z):
-    cdef:
-        double[::1] _z = np.atleast_1d(z)
-        int i
-        int n = len(_z)
-        double[::1] arr = np.zeros(n)
-
-    for i in range(n):
-        arr[i] = Om(_z[i])
-
-    return np.array(arr)
-
-cpdef _Ode(z):
-    cdef:
-        double[::1] _z = np.atleast_1d(z)
-        int i
-        int n = len(_z)
-        double[::1] arr = np.zeros(n)
-
-    for i in range(n):
-        arr[i] = Ode(_z[i])
 
     return np.array(arr)
 

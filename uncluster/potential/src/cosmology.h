@@ -41,8 +41,5 @@ double f_star(double z);
 double redshift(double t_lb);
 double nu_relative_density(double z);
 double inv_efunc_sq(double z);
-double Om(double z);
-double Ode(double z);
-double Delta(double z);
 double M_vir(double z);
 double R_vir(double z);
