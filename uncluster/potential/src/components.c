@@ -3,6 +3,36 @@
 #include <potential/builtin/builtin_potentials.h>
 #include "cosmology.h"
 
+// TODO: make this a PR, note so slow, remove most of this shite and define
+//       potential parameters hard-set in header file.
+
+double growing_milkyway_value(double t, double *pars, double *q, int n_dim) {
+    /*  pars:
+            - G - Gravitational constant
+            - m_n0 - nucleus mass scale at z=0
+            - c0 - nucleus scale radius at z=0
+            - m_h0 - halo mass scale at z=0
+            - r_s - halo scale radius (fixed)
+    */
+    double z = redshift(t);
+
+    int n_pars = 3;// 3 parameters for each
+    double *pars_t = (double*)malloc(sizeof(double)*n_pars);
+
+    pars_t[1] = pars[1] * f_star(z);
+    pars_t[2] = pars[2] * R_vir(z) / R_vir(0);
+
+    double val = hernquist_value(t, pars_t, q, n_dim);
+    free(pars_t);
+    return val;
+}
+
+
+/* ===========================================================================
+    The stuff below is too slow for generating mock streams because the
+    cosmological functions are evaluated 4 times per gradient call!
+*/
+
 /* ---------------------------------------------------------------------------
     Hernquist sphere
 */
