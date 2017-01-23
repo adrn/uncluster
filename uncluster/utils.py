@@ -29,7 +29,7 @@ def quantity_from_hdf5(dset, n=None):
     else:
         return dset[:] * unit
 
-def quantity_to_hdf5(f, name, q):
+def quantity_to_hdf5(f, key, q):
     """
     Turn an Astropy Quantity object into something we can write out to
     an HDF5 file.
@@ -45,9 +45,9 @@ def quantity_to_hdf5(f, name, q):
     """
 
     if hasattr(q, 'unit'):
-        f[name] = q.value
-        f[name].attrs['unit'] = str(q.unit)
+        f[key] = q.value
+        f[key].attrs['unit'] = str(q.unit)
 
     else:
-        f[name] = q
-        f[name].attrs['unit'] = ""
+        f[key] = q
+        f[key].attrs['unit'] = ""
