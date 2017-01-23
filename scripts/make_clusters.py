@@ -17,7 +17,7 @@ from schwimmbad import choose_pool
 # from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
 from uncluster.log import logger
 from uncluster.cluster_distributions.apw import sample_radii, sample_masses
-from uncluster.config import f_gc, M_tot, t_max # TODO: this doesn't make much sense anymore...
+from uncluster.config import t_max
 from uncluster.potential import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
@@ -81,8 +81,7 @@ def main(pool, df_name="sph_iso", overwrite=False):
 
     # The actual number here is arbitrary because we later post-process to get the
     #   properties of the initial population from the final population
-    # n_clusters = 10000 # MAGIC NUMBER
-    n_clusters = 100 # HACK: for testing
+    n_clusters = 10000 # MAGIC NUMBER
     gc_mass = sample_masses(size=n_clusters)
     logger.info("Sampled {} cluster masses (M_tot = {:.2e})".format(n_clusters, gc_mass.sum()))
 
