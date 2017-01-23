@@ -8,12 +8,10 @@ import sys
 # Third-party
 from astropy.table import QTable
 import astropy.units as u
-import gala.integrate as gi
 import gala.dynamics as gd
 from gala.units import galactic
 import h5py
 import numpy as np
-from scipy.optimize import minimize
 from schwimmbad import choose_pool
 
 # from uncluster.cluster_distributions.gnedin import sample_radii, sample_masses
@@ -31,7 +29,7 @@ def v_worker(task):
     df,r,n_samples = task
 
     # rejection sample to get velocity
-    vs = np.random.uniform(0, 0.5, n_samples) # MAGIC NUMBER 0.5 (max velocity)
+    vs = np.random.uniform(0, 0.5, n_samples) # MAGIC NUMBER: 0.5 (max velocity in kpc/Myr)
     ll = np.array([df.ln_f_v2(v, r) for v in vs])
     uu = np.random.uniform(size=n_samples)
     vs = vs[uu < np.exp(ll - ll.max())]
@@ -81,21 +79,11 @@ def main(pool, df_name="sph_iso", overwrite=False):
         with h5py.File(str(cache_file_path), 'w') as f:
             pass
 
-    # TODO: I'll probably want to change this...
-    # Sample masses until the total mass in GCs is equal to a fraction (f_gc) of the
-    #   total mass in stars (M_tot):
-    maxiter = 64000 # MAGIC NUMBER
-    gc_mass = sample_masses(size=maxiter)
-    for i in range(maxiter):
-        _sum = gc_mass[:i+1].sum()
-        if _sum >= f_gc*M_tot:
-            break
-
-    if i == (maxiter-1):
-        raise ValueError("Reached maximum number of iterations when sampling masses.")
-
-    gc_mass = gc_mass[:i+1]
-    n_clusters = len(gc_mass)
+    # The actual number here is arbitrary because we later post-process to get the
+    #   properties of the initial population from the final population
+    # n_clusters = 10000 # MAGIC NUMBER
+    n_clusters = 100 # HACK: for testing
+    gc_mass = sample_masses(size=n_clusters)
     logger.info("Sampled {} cluster masses (M_tot = {:.2e})".format(n_clusters, gc_mass.sum()))
 
     # only take radii out to ~virial radius
@@ -129,22 +117,6 @@ def main(pool, df_name="sph_iso", overwrite=False):
     if n_bad > 0:
         n_clusters -= n_bad
         logger.warning("Failed to get velocity / position for {} clusters".format(n_bad))
-
-    # compute circularities and final radii for the orbits
-    # t_cross = gc_radius / v_mag
-
-    # logger.debug("Computing circularities...")
-    # J_Jc = np.zeros_like(t_cross.value)
-    # for i in range(n_clusters):
-    #     J = np.sqrt(np.sum(w0[i].angular_momentum()**2))
-    #     Jc = np.sqrt(np.sum(w0[i].pos**2)) * mw_potential.circular_velocity(w0[i].pos, t=t_max)
-    #     J_Jc[i] = (J / Jc).decompose()[0]
-    # logger.debug("...done.")
-
-    # idx = np.isfinite(J_Jc)
-    # if idx.sum() != len(idx):
-    #     logger.warning("{}/{} failed circularities".format(n_clusters-idx.sum(),
-    #                                                        n_clusters))
 
     pool.close()
 
