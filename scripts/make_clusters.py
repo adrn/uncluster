@@ -24,6 +24,7 @@ from uncluster.potential import mw_potential
 from uncluster.cluster_distributions.apw import gc_prob_density
 from uncluster.distribution_function import SphericalIsotropicDF
 from uncluster.paths import Paths
+from uncluster.utils import quantity_to_hdf5
 paths = Paths()
 
 def v_worker(task):
@@ -66,12 +67,15 @@ def main(pool, df_name="sph_iso", overwrite=False):
     df.make_ln_df_interp_func(energy_grid, log_df_grid)
 
     if cache_file_path.exists():
-        with h5py.File(str(cache_file_path), 'r') as f:
-            if 'cluster_properties' in f and not overwrite:
+        with h5py.File(str(cache_file_path), 'r+') as f:
+            if 'progenitors' in f and not overwrite:
                 logger.info("Cache file {:} already contains results. Use --overwrite "
                             "to overwrite.".format(str(cache_file_path)))
                 pool.close()
                 sys.exit(0)
+
+            elif 'progenitors' in f and overwrite:
+                del f['progenitors']
 
     else:
         with h5py.File(str(cache_file_path), 'w') as f:
@@ -96,7 +100,7 @@ def main(pool, df_name="sph_iso", overwrite=False):
 
     # only take radii out to ~virial radius
     logger.debug("Sampling cluster radii...")
-    gc_radius = sample_radii(r_max=250., size=n_clusters)
+    gc_radius = sample_radii(r_min=0.1, r_max=250., size=n_clusters)
     logger.debug("...done.")
 
     n_samples = 100
@@ -127,38 +131,32 @@ def main(pool, df_name="sph_iso", overwrite=False):
         logger.warning("Failed to get velocity / position for {} clusters".format(n_bad))
 
     # compute circularities and final radii for the orbits
-    t_cross = gc_radius / v_mag
+    # t_cross = gc_radius / v_mag
 
-    logger.debug("Computing circularities...")
-    J_Jc = np.zeros_like(t_cross.value)
-    for i in range(n_clusters):
-        J = np.sqrt(np.sum(w0[i].angular_momentum()**2))
-        Jc = np.sqrt(np.sum(w0[i].pos**2)) * mw_potential.circular_velocity(w0[i].pos, t=t_max)
-        J_Jc[i] = (J / Jc).decompose()[0]
-    logger.debug("...done.")
+    # logger.debug("Computing circularities...")
+    # J_Jc = np.zeros_like(t_cross.value)
+    # for i in range(n_clusters):
+    #     J = np.sqrt(np.sum(w0[i].angular_momentum()**2))
+    #     Jc = np.sqrt(np.sum(w0[i].pos**2)) * mw_potential.circular_velocity(w0[i].pos, t=t_max)
+    #     J_Jc[i] = (J / Jc).decompose()[0]
+    # logger.debug("...done.")
 
-    idx = np.isfinite(J_Jc)
-    if idx.sum() != len(idx):
-        logger.warning("{}/{} failed circularities".format(n_clusters-idx.sum(),
-                                                           n_clusters))
+    # idx = np.isfinite(J_Jc)
+    # if idx.sum() != len(idx):
+    #     logger.warning("{}/{} failed circularities".format(n_clusters-idx.sum(),
+    #                                                        n_clusters))
 
     pool.close()
 
     # Write out the initial conditions and cluster properties
     with h5py.File(str(cache_file_path), 'a') as root:
-        f = root.create_group('cluster_properties')
+        f = root.create_group('progenitors')
         f.attrs['n'] = n_clusters
 
-        d = f.create_dataset('w0_pos', data=w0.pos)
-        d.attrs['unit'] = 'kpc'
-
-        d = f.create_dataset('w0_vel', data=w0.vel)
-        d.attrs['unit'] = 'kpc/Myr'
-
-        d = f.create_dataset('mass', data=gc_mass)
-        d.attrs['unit'] = 'Msun'
-
-        f.create_dataset('circularity', data=J_Jc)
+        w0_f = f.create_group('initial')
+        quantity_to_hdf5(w0_f, 'pos', w0.pos)
+        quantity_to_hdf5(w0_f, 'vel', w0.vel)
+        quantity_to_hdf5(w0_f, 'mass', gc_mass)
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
