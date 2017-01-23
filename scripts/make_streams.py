@@ -103,8 +103,6 @@ class MockStreamWorker(object):
                 release_every = 8
             n_stream = (_idx+1) // release_every*2
 
-        release_every = 128 # HACK:
-
         # don't make a stream if its final radius is outside of the virial radius
         if np.sqrt(np.sum(gc_orbit.pos[:,-1]**2)) > 500*u.kpc:
             r0 = np.sqrt(np.sum(w0.pos**2))
