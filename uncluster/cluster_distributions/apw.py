@@ -16,7 +16,10 @@ from .gnedin import sample_masses
 __all__ = ['gc_prob_density', 'sample_radii', 'sample_masses']
 
 # HACK: this is a BY EYE "fit" to the Sersic density profile
-_hernquist = HernquistPotential(m=1., c=2., units=galactic)
+# _hernquist = HernquistPotential(m=1., c=2., units=galactic)
+
+# DOUBLE HACK: tweaked the above to make scale radius larger to account for MW mass growth
+_hernquist = HernquistPotential(m=1., c=5., units=galactic)
 def gc_prob_density(r):
     r"""
     Evaluate the **probability** density of the spatial distribtuon
