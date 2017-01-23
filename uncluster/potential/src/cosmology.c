@@ -1,4 +1,3 @@
-#include <math.h>
 #include "cosmology.h"
 
 double f_star(double z) {
@@ -15,7 +14,7 @@ double redshift(double t_lb) {
         Lookback time (in Myr) to redshift - this is also an approximation
         ignoring radiation energy. Even at z=4, it's only ~1% wrong.
     */
-    return pow(sqrt(Om0/Ode0) * sinh(1.5*sqrt(Ode0)*(t_lb/t_H - C)), -0.6666666667) - 1.;
+    return pow(_rfac1 * sinh(_rfac2*(t_lb/t_H - C)), -0.6666666667) - 1.;
 }
 
 double nu_relative_density(double z) {
@@ -56,8 +55,14 @@ double M_vir(double z) {
 }
 
 double R_vir(double z) {
-    double _Delta = pow(Delta(z) / 200, -1/3.);
-    double _Om = pow(Om(z) / 0.3, -1/3.);
-    double _h2 = pow(_h / 0.7, -2/3.);
-    return 309. * pow(M_vir(z)/1E12, 1/3.) * _Delta * _Om * _h2 / (1 + z);
+    double zp1 = 1 + z;
+    double inv_ef = inv_efunc_sq(z);
+    double Omz = Om0 * zp1*zp1*zp1 * inv_ef;
+    double Odez = Ode0 * inv_ef;
+    double Deltaz = (18*M_PI*M_PI - 82*Odez - 39*Odez*Odez) / Omz;
+
+    double _Delta = pow(Deltaz / 200, -0.33333333333333);
+    double _Om = pow(Omz / 0.3, -0.33333333333333);
+    double _h2 = pow(_h / 0.7, -0.66666666666666);
+    return 309. * pow(M_vir(z) / 1E12, 0.33333333333333) * _Delta * _Om * _h2 / zp1;
 }

@@ -1,3 +1,4 @@
+#include <math.h>
 #include "cosmo_helper.h"
 
 /*
@@ -20,6 +21,8 @@ static const double Ogamma0 = 5.388890478958946e-05; // Omega photons
 static const double t_H = 14434.48806721477; // Myr
 static const double _h = 0.6774; // hubble parameter
 static const double C = -0.95776556521317;
+static const double _rfac1 = 0.66708383142120198; // sqrt(Om0/Ode0)
+static const double _rfac2 = 1.2469051096750499; // 1.5*sqrt(Ode0)
 
 /*
     The following definitions are nedded for neutrino density. See
