@@ -35,21 +35,6 @@ double inv_efunc_sq(double z) {
     return 1/(zp1*zp1*zp1 * (Or * zp1 + Om0) + Ode0);
 }
 
-double Om(double z) {
-    double zp1 = 1 + z;
-    return Om0 * zp1*zp1*zp1 * inv_efunc_sq(z);
-}
-
-double Ode(double z) {
-    return Ode0 * inv_efunc_sq(z);
-}
-
-double Delta(double z) {
-    /* An approximation thanks to Dekel & Birnboim 2006 (see appendix) */
-    double _Ode = Ode(z);
-    return (18*M_PI*M_PI - 82*_Ode - 39*_Ode*_Ode) / Om(z);
-}
-
 double M_vir(double z) {
     return M_vir0 * exp(-0.8*z);
 }
@@ -57,8 +42,10 @@ double M_vir(double z) {
 double R_vir(double z) {
     double zp1 = 1 + z;
     double inv_ef = inv_efunc_sq(z);
-    double Omz = Om0 * zp1*zp1*zp1 * inv_ef;
-    double Odez = Ode0 * inv_ef;
+    double Omz = Om0 * zp1*zp1*zp1 * inv_ef; // Omega matter
+    double Odez = Ode0 * inv_ef; // Omega dark energy
+
+    /* An approximation thanks to Dekel & Birnboim 2006 (see appendix) */
     double Deltaz = (18*M_PI*M_PI - 82*Odez - 39*Odez*Odez) / Omz;
 
     double _Delta = pow(Deltaz / 200, -0.33333333333333);
