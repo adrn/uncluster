@@ -6,8 +6,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 
 # Project
-from ...config import cosmology
-from .helpers import (_f_star, _redshift, _nu_relative_density, _inv_efunc_sq, _Om, _Ode,
+from ...config import cosmology, Mvir0
+from .helpers import (_f_star, _redshift, _nu_relative_density, _inv_efunc_sq,
                       _M_vir, _R_vir)
 
 n_grid = 128
@@ -31,18 +31,6 @@ def test_inv_efunc_sq():
     arr2 = _inv_efunc_sq(z_grid)
     assert np.allclose(arr1, arr2)
 
-def test_Om():
-    z_grid = np.linspace(0, z_max, n_grid)
-    arr1 = cosmology.Om(z_grid)
-    arr2 = _Om(z_grid)
-    assert np.allclose(arr1, arr2)
-
-def test_Ode():
-    z_grid = np.linspace(0, z_max, n_grid)
-    arr1 = cosmology.Ode(z_grid)
-    arr2 = _Ode(z_grid)
-    assert np.allclose(arr1, arr2)
-
 def test_fstar():
     z_grid = np.linspace(0, 3., n_grid)
 
@@ -54,14 +42,13 @@ def test_fstar():
     assert np.allclose(f_star, _f_star(z_grid), rtol=0.2)
 
 # --------------------------------------------------------------
-M_vir0 = 9.93144e+11*u.Msun
 
 def Delta(z):
     """ An approximation thanks to Dekel & Birnboim 2006 (see appendix) """
     return (18*np.pi**2 - 82*cosmology.Ode(z) - 39*cosmology.Ode(z)**2) / cosmology.Om(z)
 
 def M_vir(z):
-    return M_vir0 * np.exp(-0.8*z)
+    return Mvir0 * np.exp(-0.8*z)
 
 def R_vir(z):
     _Delta = (Delta(z) / 200)**(-1/3.)

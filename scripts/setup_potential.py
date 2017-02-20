@@ -31,7 +31,7 @@ from scipy.interpolate import interp1d
 # also change them in `uncluster/config.py`
 #
 cosmology = ac.Planck15
-halo_concentration = 15. # MAGIC NUMBER - assumption
+Mvir0 = 1E12 * u.Msun # MAGIC NUMBER - assumption
 #
 ##############################################################################
 
@@ -159,17 +159,13 @@ def main(plot=False):
     ##########################################################################
     # 2. Now solve for the cosmological evolution of the parameters:
     #
-    def F(c):
-        return np.log(1 + c) - c/(1+c)
 
     # Global configuration
-    M_vir0 = F(halo_concentration) * fit_potential['halo'].parameters['m']
-    print("Mvir at z=0: {:.6e} Msun".format(M_vir0))
-    print(halo_concentration, F(halo_concentration))
+    print("Mvir at z=0: {:.6e} Msun".format(Mvir0))
 
     lines = [
         '// vvv --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- vvv\n',
-        'static double const M_vir0 = {:.8e};\n'.format(M_vir0.to(u.Msun).value),
+        'static double const Mvir0 = {:.8e};\n'.format(Mvir0.to(u.Msun).value),
         '// ^^^ --- THIS IS AUTO-GENERATED CODE - see scripts/setup-potential.py --- ^^^'
     ]
     with open(join(potential_path, "src", "cosmo_helper.h"), "w") as f:
