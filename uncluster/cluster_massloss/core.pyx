@@ -69,10 +69,12 @@ cdef _solve_mass_evolution(double M0, double *t_grid, int n_times,
         dy_dt(M[i], t_grid[i],
               r_grid[i], vc_grid[i], &y_dot[0])
 
-        M[i+1] = M[i] + y_dot[0]*dt
+        M_next = M[i] + y_dot[0]*dt
 
-        if isnan(y_dot[0]) or M[i+1]<=0:
+        if isnan(y_dot[0]) or M_next <= 0:
             break
+
+        M[i+1] = M_next
 
     return i, np.array(M)
 
